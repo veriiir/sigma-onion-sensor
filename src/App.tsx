@@ -2,12 +2,14 @@ import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AppProvider, useApp } from './contexts/AppContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import AuthPage from './pages/AuthPage';
 import DashboardPage from './pages/DashboardPage';
 import AIAnalysisPage from './pages/AIAnalysisPage';
 import HistoryPage from './pages/HistoryPage';
 import SettingsPage from './pages/SettingsPage';
 import MainLayout from './components/layout/MainLayout';
+import ToastContainer from './components/notifications/ToastContainer';
 
 function PageContent() {
   const { activePage } = useApp();
@@ -49,11 +51,14 @@ function AppInner() {
   }
 
   return (
-    <AppProvider>
-      <MainLayout>
-        <PageContent />
-      </MainLayout>
-    </AppProvider>
+    <NotificationProvider>
+      <AppProvider>
+        <MainLayout>
+          <PageContent />
+        </MainLayout>
+        <ToastContainer />
+      </AppProvider>
+    </NotificationProvider>
   );
 }
 

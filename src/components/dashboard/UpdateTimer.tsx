@@ -8,9 +8,10 @@ interface UpdateTimerProps {
 
 function formatTime(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
-  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
 function formatDate(date: Date): string {
@@ -18,7 +19,8 @@ function formatDate(date: Date): string {
 }
 
 export default function UpdateTimer({ nextUpdateIn, lastUpdated }: UpdateTimerProps) {
-  const progress = ((600000 - nextUpdateIn) / 600000) * 100;
+  const SYNC_INTERVAL = 6 * 60 * 60 * 1000;
+  const progress = ((SYNC_INTERVAL - nextUpdateIn) / SYNC_INTERVAL) * 100;
 
   return (
     <div className="bg-white rounded-2xl px-5 py-4 shadow-sm border border-gray-100 flex items-center gap-4">
@@ -45,7 +47,7 @@ export default function UpdateTimer({ nextUpdateIn, lastUpdated }: UpdateTimerPr
 
       <div className="flex-1 hidden sm:block">
         <div className="flex justify-between text-xs text-gray-400 mb-1">
-          <span>Siklus pembaruan 10 menit</span>
+          <span>Siklus pembaruan 6 jam</span>
           <span>{Math.round(progress)}%</span>
         </div>
         <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">

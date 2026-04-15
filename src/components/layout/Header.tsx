@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Menu, ChevronRight, Bell, Smartphone, MonitorSpeaker, ChevronDown, LogOut, User, Settings } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNotification } from '../../contexts/NotificationContext';
 import { ActivePage, SystemType } from '../../types';
 
 const pageLabels: Record<ActivePage, string> = {
@@ -14,6 +15,7 @@ const pageLabels: Record<ActivePage, string> = {
 export default function Header() {
   const { activePage, activeMode, setActiveMode, setSidebarOpen, setActivePage } = useApp();
   const { user, signOut } = useAuth();
+  const { notifications } = useNotification();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -70,7 +72,11 @@ export default function Header() {
 
         <button className="relative p-2 rounded-xl hover:bg-gray-100 transition-colors text-gray-500">
           <Bell className="w-5 h-5" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
+          {notifications.length > 0 && (
+            <span className="absolute top-1 right-1 min-w-[16px] h-4 bg-red-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-[9px] font-bold leading-none px-0.5">{notifications.length}</span>
+            </span>
+          )}
         </button>
 
         <div className="relative" ref={dropdownRef}>
