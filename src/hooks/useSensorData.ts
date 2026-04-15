@@ -7,23 +7,6 @@ import { useNotification } from '../contexts/NotificationContext';
 const SYNC_INTERVAL = 6 * 60 * 60 * 1000;
 const SIGNIFICANT_THRESHOLD = 0.1;
 
-function storageKey(systemType: SystemType, landId: LandId) {
-  return `sigma_last_update_${systemType}_${landId}`;
-}
-
-function getRemaining(systemType: SystemType, landId: LandId): number {
-  const raw = localStorage.getItem(storageKey(systemType, landId));
-  if (!raw) return 0;
-  const lastTs = parseInt(raw, 10);
-  if (isNaN(lastTs)) return 0;
-  const remaining = SYNC_INTERVAL - (Date.now() - lastTs);
-  return remaining > 0 ? remaining : 0;
-}
-
-function saveTimestamp(systemType: SystemType, landId: LandId) {
-  localStorage.setItem(storageKey(systemType, landId), String(Date.now()));
-}
-
 function generateSensorData(systemType: SystemType, landId: LandId): Omit<SensorReading, 'id' | 'user_id' | 'created_at'> {
   const variance = systemType === 'portable' ? 1.0 : 0.5;
   const offset = landId === 'lahan2' ? 5 : landId === 'lahan3' ? 10 : 0;
@@ -76,34 +59,52 @@ async function fetchTodayRecord(userId: string, systemType: SystemType, landId: 
   return data ?? null;
 }
 
+async function fetchSyncState(userId: string, systemType: SystemType, landId: LandId): Promise<Date | null> {
+  const { data } = await supabase
+    .from('sync_state')
+    .select('last_synced_at')
+    .eq('user_id', userId)
+    .eq('system_type', systemType)
+    .eq('land_id', landId)
+    .maybeSingle();
+  return data ? new Date(data.last_synced_at) : null;
+}
+
+async function saveSyncState(userId: string, systemType: SystemType, landId: LandId) {
+  await supabase
+    .from('sync_state')
+    .upsert(
+      { user_id: userId, system_type: systemType, land_id: landId, last_synced_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+      { onConflict: 'user_id,system_type,land_id' }
+    );
+}
+
 export function useSensorData(systemType: SystemType, landId: LandId) {
   const { user } = useAuth();
   const { push } = useNotification();
-  const [sensorData, setSensorData] = useState<SensorReading>(() => generateSensorData(systemType, landId));
-  const [nextUpdateIn, setNextUpdateIn] = useState(() => {
-    const r = getRemaining(systemType, landId);
-    return r > 0 ? r : SYNC_INTERVAL;
-  });
+  const [sensorData, setSensorData] = useState<SensorReading>(() => generateSensorData(systemType, landId) as SensorReading);
+  const [nextUpdateIn, setNextUpdateIn] = useState(SYNC_INTERVAL);
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const remainingRef = useRef(SYNC_INTERVAL);
+  const initializedRef = useRef(false);
 
   const fetchAndSave = useCallback(async (forceInsert = false) => {
     const newData = generateSensorData(systemType, landId);
-    setSensorData(newData);
+    setSensorData(newData as SensorReading);
     setLastUpdated(new Date());
-    saveTimestamp(systemType, landId);
     remainingRef.current = SYNC_INTERVAL;
     setNextUpdateIn(SYNC_INTERVAL);
 
-    checkCritical(newData).forEach(msg =>
+    checkCritical(newData as SensorReading).forEach(msg =>
       push({ type: 'error', title: 'Nilai Sensor Kritis!', message: msg, duration: 8000 })
     );
 
     if (user) {
+      await saveSyncState(user.id, systemType, landId);
       const existing = await fetchTodayRecord(user.id, systemType, landId);
-      if (forceInsert || !existing || isSignificantChange(existing as SensorReading, newData)) {
+      if (forceInsert || !existing || isSignificantChange(existing as SensorReading, newData as SensorReading)) {
         await supabase.from('sensor_readings').insert({ ...newData, user_id: user.id });
         push({ type: 'success', title: 'Data Tersimpan', message: 'Pembacaan sensor berhasil disimpan ke cloud.' });
       }
@@ -111,40 +112,49 @@ export function useSensorData(systemType: SystemType, landId: LandId) {
   }, [systemType, landId, user, push]);
 
   useEffect(() => {
-    const remaining = getRemaining(systemType, landId);
-    remainingRef.current = remaining > 0 ? remaining : SYNC_INTERVAL;
-    setNextUpdateIn(remainingRef.current);
+    if (!user || initializedRef.current) return;
+    initializedRef.current = true;
 
-    if (remaining <= 0) {
-      if (user) {
+    fetchSyncState(user.id, systemType, landId).then(lastSynced => {
+      let remaining: number;
+
+      if (lastSynced) {
+        const elapsed = Date.now() - lastSynced.getTime();
+        remaining = Math.max(0, SYNC_INTERVAL - elapsed);
+      } else {
+        remaining = 0;
+      }
+
+      remainingRef.current = remaining > 0 ? remaining : SYNC_INTERVAL;
+      setNextUpdateIn(remainingRef.current);
+
+      if (remaining <= 0) {
         fetchTodayRecord(user.id, systemType, landId).then(existing => {
           fetchAndSave(!existing);
         });
-      } else {
-        fetchAndSave();
       }
-    }
 
-    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
-    function scheduleCycle(delay: number) {
-      syncTimerRef.current = setTimeout(async () => {
-        await fetchAndSave();
-        scheduleCycle(SYNC_INTERVAL);
-      }, delay);
-    }
-    scheduleCycle(remaining > 0 ? remaining : SYNC_INTERVAL);
+      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+      function scheduleCycle(delay: number) {
+        syncTimerRef.current = setTimeout(async () => {
+          await fetchAndSave();
+          scheduleCycle(SYNC_INTERVAL);
+        }, delay);
+      }
+      scheduleCycle(remaining > 0 ? remaining : SYNC_INTERVAL);
 
-    if (countdownRef.current) clearInterval(countdownRef.current);
-    countdownRef.current = setInterval(() => {
-      remainingRef.current = Math.max(0, remainingRef.current - 1000);
-      setNextUpdateIn(remainingRef.current);
-    }, 1000);
+      if (countdownRef.current) clearInterval(countdownRef.current);
+      countdownRef.current = setInterval(() => {
+        remainingRef.current = Math.max(0, remainingRef.current - 1000);
+        setNextUpdateIn(remainingRef.current);
+      }, 1000);
+    });
 
     return () => {
       if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
       if (countdownRef.current) clearInterval(countdownRef.current);
     };
-  }, [systemType, landId]);
+  }, [user, systemType, landId]);
 
   return { sensorData, nextUpdateIn, lastUpdated };
 }
