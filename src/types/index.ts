@@ -75,3 +75,12 @@ export interface Notification {
 }
 
 export type ActivePage = 'dashboard' | 'ai-analysis' | 'history' | 'settings';
+
+export interface UserPreferences {
+  user_id: string;
+  active_mode: SystemType;
+  selected_land: LandId;
+  notif_enabled: boolean;
+  auto_sync: boolean;
+  updated_at?: string;
+}

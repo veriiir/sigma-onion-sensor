@@ -89,7 +89,7 @@ export function useSensorData(systemType: SystemType, landId: LandId) {
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const remainingRef = useRef(SYNC_INTERVAL);
 
-  const fetchAndSave = useCallback(async () => {
+  const fetchAndSave = useCallback(async (forceInsert = false) => {
     const newData = generateSensorData(systemType, landId);
     setSensorData(newData);
     setLastUpdated(new Date());
@@ -103,7 +103,7 @@ export function useSensorData(systemType: SystemType, landId: LandId) {
 
     if (user) {
       const existing = await fetchTodayRecord(user.id, systemType, landId);
-      if (!existing || isSignificantChange(existing as SensorReading, newData)) {
+      if (forceInsert || !existing || isSignificantChange(existing as SensorReading, newData)) {
         await supabase.from('sensor_readings').insert({ ...newData, user_id: user.id });
         push({ type: 'success', title: 'Data Tersimpan', message: 'Pembacaan sensor berhasil disimpan ke cloud.' });
       }
@@ -115,7 +115,15 @@ export function useSensorData(systemType: SystemType, landId: LandId) {
     remainingRef.current = remaining > 0 ? remaining : SYNC_INTERVAL;
     setNextUpdateIn(remainingRef.current);
 
-    if (remaining <= 0) fetchAndSave();
+    if (remaining <= 0) {
+      if (user) {
+        fetchTodayRecord(user.id, systemType, landId).then(existing => {
+          fetchAndSave(!existing);
+        });
+      } else {
+        fetchAndSave();
+      }
+    }
 
     if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
     function scheduleCycle(delay: number) {

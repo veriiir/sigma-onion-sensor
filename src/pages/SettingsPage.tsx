@@ -1,18 +1,16 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Settings, User, Smartphone, MonitorSpeaker, Bell, Shield, Info, ChevronRight, Save, Check } from 'lucide-react';
+import { Settings, User, Smartphone, MonitorSpeaker, Bell, Shield, Info, Save, Check } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import { SystemType } from '../types';
 
 export default function SettingsPage() {
   const { profile, user, updateProfile } = useAuth();
-  const { activeMode, setActiveMode } = useApp();
+  const { activeMode, setActiveMode, notifEnabled, setNotifEnabled, autoSync, setAutoSync } = useApp();
   const [fullName, setFullName] = useState(profile?.full_name ?? '');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [notifEnabled, setNotifEnabled] = useState(true);
-  const [autoSync, setAutoSync] = useState(true);
 
   async function handleSave() {
     setSaving(true);
