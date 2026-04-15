@@ -67,9 +67,9 @@ function SensorDetailModal({ record, onClose }: { record: SensorReading; onClose
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         transition={{ duration: 0.2 }}
-        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
+        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden"
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-teal-100 rounded-xl flex items-center justify-center">
               <Thermometer className="w-4.5 h-4.5 text-teal-600" />
@@ -84,13 +84,14 @@ function SensorDetailModal({ record, onClose }: { record: SensorReading; onClose
           </button>
         </div>
 
-        <div className="px-6 py-2 bg-gray-50 border-b border-gray-100">
+        <div className="px-6 py-2 bg-gray-50 border-b border-gray-100 shrink-0">
           <div className="flex gap-4 text-xs text-gray-500">
             <span>Mode: <span className="font-medium text-gray-700 capitalize">{record.system_type}</span></span>
             <span>Lahan: <span className="font-medium text-gray-700 capitalize">{record.land_id ?? 'default'}</span></span>
           </div>
         </div>
 
+        <div className="overflow-y-auto flex-1 overscroll-contain">
         <div className="px-6 py-5 grid grid-cols-2 gap-3">
           {SENSOR_CONFIGS.map(c => {
             const val = record[c.key] as number;
@@ -119,6 +120,7 @@ function SensorDetailModal({ record, onClose }: { record: SensorReading; onClose
             );
           })}
         </div>
+        </div>
       </motion.div>
     </div>
   );
@@ -142,9 +144,9 @@ function AIDetailModal({ record, onClose }: { record: AIAnalysisRecord; onClose:
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         transition={{ duration: 0.2 }}
-        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden"
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-teal-100 rounded-xl flex items-center justify-center">
               <BrainCircuit className="w-4.5 h-4.5 text-teal-600" />
@@ -159,6 +161,7 @@ function AIDetailModal({ record, onClose }: { record: AIAnalysisRecord; onClose:
           </button>
         </div>
 
+        <div className="overflow-y-auto flex-1 overscroll-contain">
         <div className={`mx-6 mt-5 rounded-xl border p-4 ${sev.border} ${sev.bg}`}>
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-medium text-gray-500">Patogen Terdeteksi</p>
@@ -206,6 +209,7 @@ function AIDetailModal({ record, onClose }: { record: AIAnalysisRecord; onClose:
               </div>
             ))}
           </div>
+        </div>
         </div>
       </motion.div>
     </div>
