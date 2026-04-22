@@ -25,8 +25,8 @@ function StatBadge({ icon, label, value, color }: { icon: React.ReactNode; label
 }
 
 function PortableDashboard() {
-  const { activeMode } = useApp();
-  const { sensorData, nextUpdateIn, lastUpdated } = useSensorData(activeMode, 'default');
+  const { activeMode, selectedLand, setSelectedLand } = useApp();
+  const { sensorData, nextUpdateIn, lastUpdated } = useSensorData(activeMode, selectedLand);
   const prevDataRef = useRef<SensorReading | null>(null);
   const prevData = prevDataRef.current;
   prevDataRef.current = sensorData;
@@ -38,14 +38,21 @@ function PortableDashboard() {
 
   return (
     <div className="space-y-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-teal-100 rounded-xl flex items-center justify-center">
+        <div className="w-10 h-10 bg-teal-100 rounded-xl flex items-center justify-center shrink-0">
           <Smartphone className="w-5 h-5 text-teal-600" />
         </div>
         <div>
           <h2 className="text-lg font-bold text-gray-900">Sensor Genggam Portable</h2>
           <p className="text-sm text-gray-400">Pembacaan real-time dari sensor lapangan</p>
         </div>
+      </div>
+      <LandSelector 
+          selectedLand={selectedLand} 
+          onSelect={setSelectedLand} 
+          systemType={activeMode} 
+        />
       </div>
 
       <UpdateTimer nextUpdateIn={nextUpdateIn} lastUpdated={lastUpdated} />
@@ -102,7 +109,11 @@ function PanelDashboard() {
             <p className="text-sm text-gray-400">Pemantauan otomatis multi-lahan</p>
           </div>
         </div>
-        <LandSelector selectedLand={selectedLand} onSelect={setSelectedLand} />
+        <LandSelector 
+          selectedLand={selectedLand} 
+          onSelect={setSelectedLand} 
+          systemType={activeMode} 
+        />
       </div>
 
       <UpdateTimer nextUpdateIn={nextUpdateIn} lastUpdated={lastUpdated} />

@@ -1,5 +1,5 @@
 export type SystemType = 'portable' | 'panel';
-export type LandId = 'default' | 'lahan1' | 'lahan2' | 'lahan3';
+export type LandId = string
 
 export interface Profile {
   id: string;
@@ -72,6 +72,18 @@ export interface Notification {
   title: string;
   message: string;
   duration?: number;
+}
+
+export interface Land {
+  id: LandId;
+  user_id: string;
+  label: string;
+  crop: string;
+  area?: string; // Opsional untuk portable
+  latitude?: number; // Untuk Portable
+  longitude?: number; // Untuk Portable
+  system_type: SystemType;
+  created_at?: string;
 }
 
 export type ActivePage = 'dashboard' | 'ai-analysis' | 'history' | 'settings';
