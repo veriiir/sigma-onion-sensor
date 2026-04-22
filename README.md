@@ -1,4 +1,11 @@
 # SIGMA (Smart IoT for Growth Monitoring in Agriculture)
+
+## Catatan Perubahan
+
+### Hapus Fitur CCTV
+Fitur Live Camera Monitoring (CCTV) telah dihapus dari aplikasi. Komponen `LiveCamera` beserta tampilan kamera live di Mode Panel sudah tidak tersedia. Ruang yang sebelumnya digunakan kamera kini dimanfaatkan untuk menampilkan kartu ringkasan sensor secara penuh dan konsisten di kedua mode (Portable dan Panel).
+
+---
 SIGMA (Smart IoT for Growth Monitoring in Agriculture) adalah platform ekosistem digital yang dirancang untuk membantu petani dalam pemantauan nutrisi tanah dan kesehatan tanaman secara presisi. Sistem ini menggabungkan teknologi Internet of Things (IoT) dengan Computer Vision (AI) untuk memberikan data yang akurat dan actionable.
 
 ## 1. Konsep Perangkat (Dual System)

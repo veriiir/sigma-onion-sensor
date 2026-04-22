@@ -5,7 +5,6 @@ import { useApp } from '../contexts/AppContext';
 import { useSensorData } from '../hooks/useSensorData';
 import SensorCard from '../components/dashboard/SensorCard';
 import UpdateTimer from '../components/dashboard/UpdateTimer';
-import LiveCamera from '../components/dashboard/LiveCamera';
 import LandSelector from '../components/dashboard/LandSelector';
 import { SENSOR_CONFIGS } from '../constants/sensors';
 import { SensorReading } from '../types';
@@ -118,18 +117,11 @@ function PanelDashboard() {
 
       <UpdateTimer nextUpdateIn={nextUpdateIn} lastUpdated={lastUpdated} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <div className="lg:col-span-1">
-          <LiveCamera />
-        </div>
-        <div className="lg:col-span-2 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <StatBadge icon={<Thermometer className="w-5 h-5 text-red-500" />} label="Suhu" value={`${sensorData.temperature.toFixed(1)}°C`} color="bg-red-50" />
-            <StatBadge icon={<Droplets className="w-5 h-5 text-blue-500" />} label="Kelembaban" value={`${sensorData.moisture.toFixed(1)}%`} color="bg-blue-50" />
-            <StatBadge icon={<FlaskConical className="w-5 h-5 text-teal-500" />} label="pH Tanah" value={sensorData.ph.toFixed(2)} color="bg-teal-50" />
-            <StatBadge icon={<Zap className="w-5 h-5 text-amber-500" />} label="Sensor Optimal" value={`${healthyCount} / ${SENSOR_CONFIGS.length}`} color="bg-amber-50" />
-          </div>
-        </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatBadge icon={<Thermometer className="w-5 h-5 text-red-500" />} label="Suhu" value={`${sensorData.temperature.toFixed(1)}°C`} color="bg-red-50" />
+        <StatBadge icon={<Droplets className="w-5 h-5 text-blue-500" />} label="Kelembaban" value={`${sensorData.moisture.toFixed(1)}%`} color="bg-blue-50" />
+        <StatBadge icon={<FlaskConical className="w-5 h-5 text-teal-500" />} label="pH Tanah" value={sensorData.ph.toFixed(2)} color="bg-teal-50" />
+        <StatBadge icon={<Zap className="w-5 h-5 text-amber-500" />} label="Sensor Optimal" value={`${healthyCount} / ${SENSOR_CONFIGS.length}`} color="bg-amber-50" />
       </div>
 
       <div>
