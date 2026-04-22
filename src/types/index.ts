@@ -52,6 +52,9 @@ export interface AIAnalysisRecord {
   bbox_y: number;
   bbox_width: number;
   bbox_height: number;
+  latitude?: number | null;
+  longitude?: number | null;
+  location_source?: 'gps' | 'exif' | 'manual' | null;
   created_at?: string;
 }
 
