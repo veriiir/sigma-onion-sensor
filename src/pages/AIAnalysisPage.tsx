@@ -77,6 +77,7 @@ export default function AIAnalysisPage() {
   const [imgLoaded, setImgLoaded] = useState(false);
   const [captureMode, setCaptureMode] = useState<'camera' | 'upload' | null>(null);
   const [manualLand, setManualLand] = useState('lahan1');
+  const [capturedImageUrl, setCapturedImageUrl] = useState<string | null>(null);
 
   const [location, setLocation] = useState<LocationState>({
     latitude: null,
@@ -88,6 +89,7 @@ export default function AIAnalysisPage() {
 
   const imgRef = useRef<HTMLImageElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const diseaseInfo = detection ? (DISEASE_DATA[detection.label] ?? DISEASE_DATA['Sehat']) : null;
   const severity = diseaseInfo?.severity ?? 'none';
@@ -112,57 +114,64 @@ export default function AIAnalysisPage() {
     });
   }
 
-  async function handleCameraCapture() {
-    setCaptureMode('camera');
-    setLocation(s => ({ ...s, loading: true, error: null }));
+  function handleCameraCapture() {
+    cameraInputRef.current?.click();
+  }
 
-    const coords = await captureGPS();
-    if (coords) {
-      setLocation({ latitude: coords.latitude, longitude: coords.longitude, source: 'gps', loading: false, error: null });
-    } else {
-      setLocation({ latitude: null, longitude: null, source: null, loading: false, error: 'GPS tidak tersedia. Pilih lahan secara manual.' });
-    }
-
+  async function processImageFile(file: File, mode: 'camera' | 'upload') {
+    setCaptureMode(mode);
     setSaved(false);
     setImgLoaded(false);
+
+    // Buat object URL untuk preview gambar
+    const objectUrl = URL.createObjectURL(file);
+    setCapturedImageUrl(prev => {
+      if (prev) URL.revokeObjectURL(prev);
+      return objectUrl;
+    });
+
+    setLocation(s => ({ ...s, loading: true, error: null }));
+
+    if (mode === 'camera') {
+      const coords = await captureGPS();
+      if (coords) {
+        setLocation({ latitude: coords.latitude, longitude: coords.longitude, source: 'gps', loading: false, error: null });
+      } else {
+        setLocation({ latitude: null, longitude: null, source: null, loading: false, error: 'GPS tidak tersedia. Pilih lahan secara manual.' });
+      }
+    } else {
+      try {
+        const exifData = await exifr.gps(file);
+        if (exifData?.latitude != null && exifData?.longitude != null) {
+          let timestamp: string | undefined;
+          try {
+            const full = await exifr.parse(file, ['DateTimeOriginal']);
+            if (full?.DateTimeOriginal) timestamp = new Date(full.DateTimeOriginal).toLocaleString('id-ID');
+          } catch { /* timestamp not critical */ }
+
+          setLocation({ latitude: exifData.latitude, longitude: exifData.longitude, source: 'exif', timestamp, loading: false, error: null });
+        } else {
+          setLocation({ latitude: null, longitude: null, source: null, loading: false, error: 'Metadata GPS tidak ditemukan dalam foto. Pilih lahan secara manual.' });
+        }
+      } catch {
+        setLocation({ latitude: null, longitude: null, source: null, loading: false, error: 'Gagal membaca EXIF foto. Pilih lahan secara manual.' });
+      }
+    }
+
     await runDetection();
+  }
+
+  async function handleCameraInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await processImageFile(file, 'camera');
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
   }
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    setCaptureMode('upload');
-    setLocation(s => ({ ...s, loading: true, error: null }));
-
-    try {
-      const exifData = await exifr.gps(file);
-      if (exifData?.latitude != null && exifData?.longitude != null) {
-        let timestamp: string | undefined;
-        try {
-          const full = await exifr.parse(file, ['DateTimeOriginal']);
-          if (full?.DateTimeOriginal) timestamp = new Date(full.DateTimeOriginal).toLocaleString('id-ID');
-        } catch { /* timestamp not critical */ }
-
-        setLocation({
-          latitude: exifData.latitude,
-          longitude: exifData.longitude,
-          source: 'exif',
-          timestamp,
-          loading: false,
-          error: null,
-        });
-      } else {
-        setLocation({ latitude: null, longitude: null, source: null, loading: false, error: 'Metadata GPS tidak ditemukan dalam foto. Pilih lahan secara manual.' });
-      }
-    } catch {
-      setLocation({ latitude: null, longitude: null, source: null, loading: false, error: 'Gagal membaca EXIF foto. Pilih lahan secara manual.' });
-    }
-
-    setSaved(false);
-    setImgLoaded(false);
-    await runDetection();
-
+    await processImageFile(file, 'upload');
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
@@ -177,7 +186,7 @@ export default function AIAnalysisPage() {
       disease_name: detection.label,
       confidence: detection.confidence,
       recommendation: diseaseInfo.recommendation,
-      image_url: detection.image_url,
+      image_url: capturedImageUrl ?? detection.image_url,
       bbox_x: detection.bbox_x,
       bbox_y: detection.bbox_y,
       bbox_width: detection.bbox_width,
@@ -201,6 +210,7 @@ export default function AIAnalysisPage() {
     setCaptureMode(null);
     setSaved(false);
     setImgLoaded(false);
+    setCapturedImageUrl(prev => { if (prev) URL.revokeObjectURL(prev); return null; });
     setLocation({ latitude: null, longitude: null, source: null, loading: false, error: null });
     await runDetection();
   }
@@ -234,6 +244,10 @@ export default function AIAnalysisPage() {
             </p>
           </div>
 
+          {/* Hidden inputs (shared) */}
+          <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCameraInputChange} />
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
+
           <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm">
             <button
               onClick={handleCameraCapture}
@@ -242,17 +256,13 @@ export default function AIAnalysisPage() {
               <Camera className="w-5 h-5" />
               Kamera
             </button>
-            <label className="flex-1 flex items-center justify-center gap-2.5 bg-white hover:bg-gray-50 text-gray-700 font-semibold px-6 py-3.5 rounded-xl transition-all duration-200 border-2 border-gray-200 cursor-pointer">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex-1 flex items-center justify-center gap-2.5 bg-white hover:bg-gray-50 text-gray-700 font-semibold px-6 py-3.5 rounded-xl transition-all duration-200 border-2 border-gray-200"
+            >
               <Upload className="w-5 h-5" />
               Unggah Foto
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleFileUpload}
-              />
-            </label>
+            </button>
           </div>
 
           <div className="flex items-center gap-2 text-xs text-gray-400 bg-gray-50 px-4 py-2 rounded-xl">
@@ -272,17 +282,14 @@ export default function AIAnalysisPage() {
                   <span className="text-sm font-semibold text-gray-700">Gambar Capture Lapangan</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="flex items-center gap-1.5 text-xs bg-white hover:bg-gray-50 border border-gray-200 text-gray-600 px-3 py-1.5 rounded-lg transition-colors font-medium cursor-pointer">
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={analyzing}
+                    className="flex items-center gap-1.5 text-xs bg-white hover:bg-gray-50 border border-gray-200 disabled:opacity-50 text-gray-600 px-3 py-1.5 rounded-lg transition-colors font-medium"
+                  >
                     <Upload className="w-3.5 h-3.5" />
                     Ganti Foto
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleFileUpload}
-                    />
-                  </label>
+                  </button>
                   <button
                     onClick={handleCameraCapture}
                     disabled={analyzing}
@@ -302,10 +309,20 @@ export default function AIAnalysisPage() {
                 </div>
               </div>
 
+              {/* Hidden camera input */}
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={handleCameraInputChange}
+              />
+
               <div className="relative bg-gray-900 aspect-video overflow-hidden">
                 <img
                   ref={imgRef}
-                  src="https://images.pexels.com/photos/2286776/pexels-photo-2286776.jpeg?auto=compress&cs=tinysrgb&w=800"
+                  src={capturedImageUrl ?? 'https://images.pexels.com/photos/2286776/pexels-photo-2286776.jpeg?auto=compress&cs=tinysrgb&w=800'}
                   alt="Tangkapan kamera lapangan"
                   onLoad={() => setImgLoaded(true)}
                   className="w-full h-full object-cover"
