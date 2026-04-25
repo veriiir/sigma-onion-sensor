@@ -30,51 +30,58 @@ export default function Header() {
   }, []);
 
   return (
-    <header className="h-16 bg-white border-b border-gray-100 flex items-center px-4 lg:px-6 gap-4 sticky top-0 z-20 shadow-sm">
+    /* REVISI: Mengubah bg-white menjadi Krem #FBF9F4 dan border ke transparan hitam sangat halus (black/5) 
+       agarHeader terlihat menyatu sempurna dengan latar belakang Dashboard */
+    <header className="h-16 bg-[#FBF9F4] border-b border-black/5 flex items-center px-4 lg:px-6 gap-4 sticky top-0 z-20">
       <button
         onClick={() => setSidebarOpen(true)}
-        className="lg:hidden p-2 rounded-xl hover:bg-gray-100 transition-colors text-gray-500"
+        /* REVISI: Ganti hover ke bg-black/5 (Warm Gray transparan) */
+        className="lg:hidden p-2 rounded-xl hover:bg-black/5 transition-colors text-gray-500"
       >
         <Menu className="w-5 h-5" />
       </button>
 
-      <div className="flex items-center gap-2 text-sm text-gray-500 flex-1 min-w-0">
-        <span className="text-teal-600 font-medium hidden sm:block">SIGMA</span>
-        <ChevronRight className="w-4 h-4 hidden sm:block" />
-        <span className="text-gray-800 font-semibold truncate">{pageLabels[activePage]}</span>
+      <div className="flex items-center gap-2 text-sm text-gray-500 flex-1 min-w-0 font-medium">
+        {/* REVISI: Mengubah text-teal-600 ke text-primary (Hijau Hutan Forest) */}
+        <span className="text-primary font-bold hidden sm:block tracking-tighter uppercase">SIGMA</span>
+        <ChevronRight className="w-4 h-4 hidden sm:block opacity-30" />
+        <span className="text-gray-800 font-bold tracking-tighter truncate">{pageLabels[activePage]}</span>
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="flex items-center bg-gray-100 rounded-xl p-1 gap-1">
+        {/* REVISI: Background switcher dari abu kaku ke black/5 agar lebih "Organic" */ }
+        <div className="flex items-center bg-black/5 rounded-xl p-1 gap-1">
           <button
             onClick={() => setActiveMode('portable')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all duration-300 ${
               activeMode === 'portable'
-                ? 'bg-teal-500 text-white shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
+                /* REVISI: Aktif ganti dari teal ke primary hijau forest */
+                ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                : 'text-gray-500 hover:text-primary hover:bg-white/50'
             }`}
           >
             <Smartphone className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Portable</span>
+            <span className="hidden sm:inline">Portable Mode</span>
           </button>
           <button
             onClick={() => setActiveMode('panel')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all duration-300 ${
               activeMode === 'panel'
-                ? 'bg-teal-500 text-white shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
+                /* REVISI: Aktif ganti dari teal ke primary hijau forest */
+                ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                : 'text-gray-500 hover:text-primary hover:bg-white/50'
             }`}
           >
             <MonitorSpeaker className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Panel</span>
+            <span className="hidden sm:inline">Panel Mode</span>
           </button>
         </div>
 
-        <button className="relative p-2 rounded-xl hover:bg-gray-100 transition-colors text-gray-500">
-          <Bell className="w-5 h-5" />
+        <button className="relative p-2 rounded-xl hover:bg-black/5 transition-colors text-gray-500 group">
+          <Bell className="w-5 h-5 transition-transform group-hover:rotate-12" />
           {notifications.length > 0 && (
-            <span className="absolute top-1 right-1 min-w-[16px] h-4 bg-red-500 rounded-full flex items-center justify-center">
-              <span className="text-white text-[9px] font-bold leading-none px-0.5">{notifications.length}</span>
+            <span className="absolute top-1 right-1 min-w-[16px] h-4 bg-red-600 rounded-full flex items-center justify-center border-2 border-[#FBF9F4]">
+              <span className="text-white text-[9px] font-black leading-none px-0.5">{notifications.length}</span>
             </span>
           )}
         </button>
@@ -82,41 +89,42 @@ export default function Header() {
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-gray-100 transition-colors"
+            className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-black/5 transition-all"
           >
-            <div className="w-8 h-8 bg-teal-500 rounded-xl flex items-center justify-center">
-              <span className="text-white text-sm font-bold">{user?.email?.[0]?.toUpperCase() ?? 'U'}</span>
+            {/* REVISI: Inisial profile ganti warna bg ke primary hijau forest */ }
+            <div className="w-8 h-8 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/10">
+              <span className="text-white text-xs font-black">{user?.email?.[0]?.toUpperCase() ?? 'U'}</span>
             </div>
-            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
           </button>
 
           {dropdownOpen && (
-            <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50">
-              <div className="px-4 py-3 border-b border-gray-100">
-                <p className="text-sm font-semibold text-gray-800 truncate">{user?.email}</p>
-                <p className="text-xs text-gray-400 mt-0.5">Pengguna SIGMA</p>
+            <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-xl border border-black/5 py-2 z-50 animate-in slide-in-from-top-2">
+              <div className="px-4 py-3 border-b border-black/5">
+                <p className="text-sm font-bold text-gray-800 truncate">{user?.email}</p>
+                <p className="text-[10px] text-gray-400 font-bold tracking-widest mt-1 opacity-50">Registered Farmer</p>
               </div>
               <button
                 onClick={() => { setActivePage('settings'); setDropdownOpen(false); }}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-primary/5 hover:text-primary transition-all tracking-tighter"
               >
-                <User className="w-4 h-4" />
-                Profil
+                <User className="w-4 h-4 opacity-40" />
+                Farmer Profil
               </button>
               <button
                 onClick={() => { setActivePage('settings'); setDropdownOpen(false); }}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-primary/5 hover:text-primary transition-all tracking-tighter"
               >
-                <Settings className="w-4 h-4" />
-                Pengaturan
+                <Settings className="w-4 h-4 opacity-40" />
+                Settings System
               </button>
-              <div className="border-t border-gray-100 mt-1 pt-1">
+              <div className="border-t border-black/5 mt-1 pt-1">
                 <button
                   onClick={signOut}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-3 text-xs font-black text-red-600 hover:bg-red-50 transition-all tracking-tighter"
                 >
                   <LogOut className="w-4 h-4" />
-                  Keluar
+                  Terminate Session
                 </button>
               </div>
             </div>

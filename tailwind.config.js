@@ -3,29 +3,31 @@ export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
-      fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+      colors: {
+        // Berdasarkan palet "Vivid Earth" yang Anda kirim
+        primary: {
+          DEFAULT: '#2E7D32', // Forest Green
+          light: '#E8F5E9',
+        },
+        secondary: {
+          DEFAULT: '#0288D1', // Sky Blue
+          light: '#E1F5FE',
+        },
+        tertiary: {
+          DEFAULT: '#A05220', // Soil Brown
+          light: '#FBE9E7',
+        },
+        neutral: {
+          surface: '#F8F9F8', // Background krim/abu sangat muda seperti di foto
+          muted: '#747970',
+        }
       },
       borderRadius: {
-        '2xl': '12px',
-        '3xl': '16px',
+        '4xl': '2.5rem', // Sesuai permintaan Anda untuk lekukan modal yang dalam
       },
-      colors: {
-        teal: {
-          50: '#f0fdfa',
-          100: '#ccfbf1',
-          200: '#99f6e4',
-          300: '#5eead4',
-          400: '#2dd4bf',
-          500: '#38b2ac',
-          600: '#0d9488',
-          700: '#0f766e',
-          800: '#115e59',
-          900: '#134e4a',
-        },
-      },
-      animation: {
-        'spin-slow': 'spin 3s linear infinite',
+      fontFamily: {
+        // Sesuaikan dengan referensi (Manrope adalah pilihan terbaik untuk style ini)
+        sans: ['Manrope', 'sans-serif'], 
       },
     },
   },

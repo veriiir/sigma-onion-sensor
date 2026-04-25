@@ -10,9 +10,14 @@
   }
 
   body {
+    /* REVISI: Font tetap 'Inter' sesuai instruksi (jangan ubah gaya tulisan) */
     font-family: 'Inter', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+
+    /* REVISI: MENGUBAH BACKGROUND GLOBAL MENJADI KREM HANGAT (WARM BEIGE) 
+       Warna ini (#FBF9F4) diambil langsung dari referensi dashboard AgroIntelligence yang Anda kirim. */
+    @apply bg-[#FBF9F4] text-gray-900;
   }
 
   ::-webkit-scrollbar {
@@ -25,12 +30,14 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #cbd5e0;
-    border-radius: 3px;
+    /* REVISI: Mengubah warna thumb scrollbar menjadi warna Taupe/Warm Grey agar senada dengan background krem */
+    background: #D8D2C5;
+    border-radius: 10px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #a0aec0;
+    /* REVISI: Warna hover scrollbar lebih gelap namun tetap dalam nada warna hangat */
+    background: #B6A993;
   }
 }
 

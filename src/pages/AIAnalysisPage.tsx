@@ -38,8 +38,8 @@ const DISEASE_DATA: Record<string, { severity: 'high' | 'medium' | 'none'; recom
 
 const severityCfg = {
   high: { label: 'Risiko Tinggi', color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200', icon: <AlertTriangle className="w-4 h-4" /> },
-  medium: { label: 'Risiko Sedang', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200', icon: <ShieldAlert className="w-4 h-4" /> },
-  none: { label: 'Sehat', color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-200', icon: <CheckCircle className="w-4 h-4" /> },
+  medium: { label: 'Risiko Sedang', color: 'text-tertiary', bg: 'bg-tertiary/10', border: 'border-tertiary/20', icon: <ShieldAlert className="w-4 h-4" /> },
+  none: { label: 'Sehat', color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/20', icon: <CheckCircle className="w-4 h-4" /> },
 };
 
 const LAND_OPTIONS = [
@@ -219,26 +219,26 @@ export default function AIAnalysisPage() {
     <div className="space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         <div className="flex items-center gap-3 flex-1">
-          <div className="w-10 h-10 bg-teal-100 rounded-xl flex items-center justify-center">
-            <BrainCircuit className="w-5 h-5 text-teal-600" />
+          <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary shadow-sm shadow-primary/10">
+            <BrainCircuit className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Analisis Patogen SIGMA AI</h2>
-            <p className="text-sm text-gray-400">Model: penyakit-bawang/1 — Ambil foto atau unggah untuk memulai</p>
+            <h2 className="text-lg font-bold text-gray-900 uppercase tracking-tighter">SIGMA PATHOGEN INTELLIGENCE</h2>
+            <p className="text-sm text-neutral-muted font-medium">Model: penyakit-bawang/1 — Ambil foto atau unggah untuk memulai</p>
           </div>
         </div>
         {activeMode === 'panel' && (
-          <LandSelector selectedLand={selectedLand} onSelect={setSelectedLand} />
+          <LandSelector selectedLand={selectedLand} onSelect={setSelectedLand} systemType={activeMode} />
         )}
       </div>
 
       {!detection && !analyzing && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 flex flex-col items-center gap-6 text-center">
-          <div className="w-20 h-20 bg-teal-50 rounded-full flex items-center justify-center">
-            <Scan className="w-10 h-10 text-teal-400" />
+        <div className="bg-white rounded-[2rem] border border-black/5 p-12 flex flex-col items-center gap-6 text-center shadow-xl shadow-black/5">
+          <div className="w-24 h-24 bg-primary/5 rounded-full flex items-center justify-center border-2 border-dashed border-primary/20">
+            <Scan className="w-10 h-10 text-primary opacity-60" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-gray-800">Siap Menganalisis</h3>
+            <h3 className="text-lg font-bold text-gray-800 uppercase italic">Siap Menganalisis</h3>
             <p className="text-gray-400 text-sm mt-1 max-w-xs">
               Ambil foto langsung dari kamera atau unggah dari galeri untuk memulai deteksi penyakit.
             </p>
@@ -251,16 +251,16 @@ export default function AIAnalysisPage() {
           <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm">
             <button
               onClick={handleCameraCapture}
-              className="flex-1 flex items-center justify-center gap-2.5 bg-teal-500 hover:bg-teal-400 text-white font-semibold px-6 py-3.5 rounded-xl transition-all duration-200 shadow-lg shadow-teal-200"
+              className="flex-1 flex items-center justify-center gap-2.5 bg-primary hover:bg-primary/90 text-white px-3 py-2.5 rounded-2xl transition-all shadow-xl shadow-primary/20 uppercase tracking-tighter"
             >
-              <Camera className="w-5 h-5" />
+              <Camera className="w-4 h-4" />
               Kamera
             </button>
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="flex-1 flex items-center justify-center gap-2.5 bg-white hover:bg-gray-50 text-gray-700 font-semibold px-6 py-3.5 rounded-xl transition-all duration-200 border-2 border-gray-200"
+              className="flex-1 flex items-center justify-center gap-2.5 bg-white hover:bg-gray-50 text-gray-700 px-3 py-2.5 rounded-2xl transition-all border border-gray-100 uppercase tracking-tighter"
             >
-              <Upload className="w-5 h-5" />
+              <Upload className="w-4 h-4 opacity-50" />
               Unggah Foto
             </button>
           </div>
@@ -274,11 +274,11 @@ export default function AIAnalysisPage() {
 
       {(detection || analyzing) && (
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-          <div className="lg:col-span-3 space-y-4">
+          <div className="lg:col-span-3 space-y-6">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-                <div className="flex items-center gap-2">
-                  <Scan className="w-4 h-4 text-teal-500" />
+                <div className="flex items-center gap-2 text-primary">
+                  <Scan className="w-4 h-4" />
                   <span className="text-sm font-semibold text-gray-700">Gambar Capture Lapangan</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -301,7 +301,7 @@ export default function AIAnalysisPage() {
                   <button
                     onClick={handleRunDetection}
                     disabled={analyzing}
-                    className="flex items-center gap-1.5 text-xs bg-teal-500 hover:bg-teal-400 disabled:bg-gray-200 text-white px-3 py-1.5 rounded-lg transition-colors font-medium"
+                    className="flex items-center gap-1.5 text-xs bg-primary hover:bg-primary disabled:bg-gray-200 text-white px-3 py-1.5 rounded-lg transition-colors font-medium"
                   >
                     <Play className="w-3.5 h-3.5" />
                     {analyzing ? 'Menganalisis...' : 'Analisis Ulang'}
@@ -329,17 +329,17 @@ export default function AIAnalysisPage() {
                 />
 
                 {analyzing && (
-                  <div className="absolute inset-0 bg-black/65 flex flex-col items-center justify-center gap-4">
-                    <div className="w-14 h-14 border-4 border-teal-400/30 border-t-teal-400 rounded-full animate-spin" />
+                  <div className="absolute inset-0 bg-[#14261D]/80 flex flex-col items-center justify-center gap-6">
+                    <div className="w-16 h-16 border-4 border-secondary/10 border-t-secondary rounded-full animate-spin shadow-2xl" />
                     <div className="text-center">
                       <p className="text-white font-semibold">Menganalisis Citra...</p>
-                      <p className="text-teal-300 text-xs mt-1">Model penyakit-bawang/1 sedang berjalan</p>
+                      <p className="text-secondary font-bold text-xs uppercase mt-2 tracking-[0.2em] animate-pulse">Model penyakit-bawang/1 sedang berjalan</p>
                     </div>
                     <div className="flex gap-3">
                       {['Pra-proses', 'Inferensi', 'Post-process'].map((s, i) => (
                         <div key={s} className="flex items-center gap-1">
-                          <div className="w-1.5 h-1.5 bg-teal-400 rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
-                          <span className="text-teal-300/70 text-xs">{s}</span>
+                          <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+                          <span className="text-primary-300/70 text-xs">{s}</span>
                         </div>
                       ))}
                     </div>
@@ -354,18 +354,18 @@ export default function AIAnalysisPage() {
                       className="absolute"
                       style={bboxStyle}
                     >
-                      <div className={`w-full h-full border-2 rounded-sm relative ${severity === 'none' ? 'border-teal-400' : severity === 'high' ? 'border-red-400' : 'border-amber-400'}`}>
-                        <div className={`absolute -top-6 left-0 px-2 py-0.5 rounded text-xs font-bold text-white whitespace-nowrap ${severity === 'none' ? 'bg-teal-500' : severity === 'high' ? 'bg-red-500' : 'bg-amber-500'}`}>
+                      <div className={`w-full h-full border-2 rounded-sm relative ${severity === 'none' ? 'border-primary' : severity === 'high' ? 'border-red-400' : 'border-tertiary'}`}>
+                        <div className={`absolute -top-6 left-0 px-2 py-0.5 rounded text-xs font-bold text-white whitespace-nowrap ${severity === 'none' ? 'bg-primary' : severity === 'high' ? 'bg-red-500' : 'bg-tertiary'}`}>
                           {detection.label} — {detection.confidence.toFixed(1)}%
                         </div>
                       </div>
-                      <div className={`absolute inset-0 opacity-10 ${severity === 'none' ? 'bg-teal-400' : severity === 'high' ? 'bg-red-400' : 'bg-amber-400'}`} />
+                      <div className={`absolute inset-0 opacity-10 ${severity === 'none' ? 'bg-primary' : severity === 'high' ? 'bg-red-400' : 'bg-tertiary'}`} />
                     </motion.div>
                   </AnimatePresence>
                 )}
 
-                <div className="absolute bottom-3 right-3 flex items-center gap-2 bg-black/50 backdrop-blur-sm rounded-lg px-3 py-1.5">
-                  <div className="w-2 h-2 bg-teal-400 rounded-full animate-pulse" />
+                <div className="absolute bottom-3 right-3 flex items-center gap-2 bg-[#14261D] rounded-full px-4 py-2 border border-white/10 shadow-2xl">
+                  <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse shadow-glow shadow-primary" />
                   <span className="text-white text-xs font-medium">SIGMA CAM</span>
                 </div>
               </div>
@@ -391,8 +391,8 @@ export default function AIAnalysisPage() {
                   disabled={saving || saved}
                   className={`flex items-center gap-2 font-semibold px-5 py-2.5 rounded-xl transition-all duration-200 text-sm ${
                     saved
-                      ? 'bg-teal-100 text-teal-600 cursor-default'
-                      : 'bg-teal-500 hover:bg-teal-400 disabled:bg-gray-200 text-white shadow-sm shadow-teal-200'
+                      ? 'bg-primary/10 text-primary shadow-inner border border-primary/20'
+                      : 'bg-primary text-white hover:opacity-90 shadow-primary/20 active:scale-95'
                   }`}
                 >
                   {saving ? (
@@ -414,7 +414,7 @@ export default function AIAnalysisPage() {
                 <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                   className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 flex flex-col items-center gap-4 text-center"
                 >
-                  <div className="w-16 h-16 border-4 border-teal-100 border-t-teal-500 rounded-full animate-spin" />
+                  <div className="w-14 h-14 border-4 border-primary/5 border-t-primary rounded-full animate-spin shadow-lg" />
                   <p className="text-gray-500 font-medium">Memproses gambar tanaman...</p>
                 </motion.div>
               ) : detection && (
@@ -442,7 +442,7 @@ export default function AIAnalysisPage() {
                             initial={{ width: 0 }}
                             animate={{ width: `${detection.confidence}%` }}
                             transition={{ duration: 1, delay: 0.2 }}
-                            className={`h-full rounded-full ${severity === 'none' ? 'bg-teal-500' : severity === 'high' ? 'bg-red-500' : 'bg-amber-500'}`}
+                            className={`h-full rounded-full ${severity === 'none' ? 'bg-primary' : severity === 'high' ? 'bg-red-500' : 'bg-tertiary'}`}
                           />
                         </div>
                       </div>
@@ -498,7 +498,7 @@ function LocationCard({
   if (location.loading) {
     return (
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-5 py-4 flex items-center gap-3">
-        <Loader2 className="w-4 h-4 text-teal-500 animate-spin shrink-0" />
+        <Loader2 className="w-4 h-4 text-primary animate-spin shrink-0" />
         <p className="text-sm text-gray-500">
           {captureMode === 'upload' ? 'Membaca metadata EXIF foto...' : 'Mendapatkan lokasi GPS...'}
         </p>
@@ -511,31 +511,31 @@ function LocationCard({
       <motion.div
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-teal-50 rounded-2xl border border-teal-200 px-5 py-4"
+        className="bg-secondary/5 rounded-[2rem] border-2 border-dashed border-secondary/10 px-8 py-6 shadow-sm shadow-secondary/5"
       >
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
-            <MapPin className="w-4 h-4 text-teal-600" />
+        <div className="flex items-start gap-4">
+          <div className="w-11 h-11 bg-secondary rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-secondary/20">
+            <MapPin className="w-6 h-6 text-white" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <p className="text-sm font-semibold text-teal-700">Lokasi Terverifikasi</p>
-              <span className="text-xs bg-teal-100 text-teal-600 px-2 py-0.5 rounded-full font-medium uppercase tracking-wide">
+              <span className="text-xs bg-teal-100 text-secondary px-2 py-0.5 rounded-full font-medium uppercase tracking-wide">
                 {location.source === 'gps' ? 'GPS Real-time' : 'EXIF Foto'}
               </span>
             </div>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2">
               <div>
-                <p className="text-xs text-teal-500">Latitude</p>
-                <p className="text-sm font-mono font-medium text-teal-800">{formatCoord(location.latitude, 'lat')}</p>
+                <p className="text-xs text-secondary">Latitude</p>
+                <p className="text-sm font-mono font-medium text-secondary">{formatCoord(location.latitude, 'lat')}</p>
               </div>
               <div>
-                <p className="text-xs text-teal-500">Longitude</p>
-                <p className="text-sm font-mono font-medium text-teal-800">{formatCoord(location.longitude, 'lon')}</p>
+                <p className="text-xs text-secondary">Longitude</p>
+                <p className="text-sm font-mono font-medium text-secondary/80">{formatCoord(location.longitude, 'lon')}</p>
               </div>
             </div>
             {location.timestamp && (
-              <p className="text-xs text-teal-500 mt-1.5">Waktu Foto: {location.timestamp}</p>
+              <p className="text-xs text-secondary mt-1.5">Waktu Foto: {location.timestamp}</p>
             )}
           </div>
         </div>
@@ -547,30 +547,30 @@ function LocationCard({
     <motion.div
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-amber-50 rounded-2xl border border-amber-200 px-5 py-4"
+      className="bg-tertiary/10 rounded-2xl border border-tertiary/20 px-5 py-4"
     >
       <div className="flex items-start gap-3">
         <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
-          <MapPinOff className="w-4 h-4 text-amber-600" />
+          <MapPinOff className="w-4 h-4 text-tertiary opacity-40" />
         </div>
         <div className="flex-1">
           {location.error && (
-            <p className="text-sm text-amber-700 font-medium mb-3">{location.error}</p>
+            <p className="text-sm text-tertiary font-medium mb-3">{location.error}</p>
           )}
           {!location.error && (
-            <p className="text-sm text-amber-700 font-medium mb-3">Pilih lahan untuk melanjutkan penyimpanan.</p>
+            <p className="text-sm text-tertiary font-medium mb-3">Pilih lahan untuk melanjutkan penyimpanan.</p>
           )}
           <div className="relative">
             <select
               value={manualLand}
               onChange={e => onManualLandChange(e.target.value)}
-              className="w-full appearance-none bg-white border border-amber-200 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-300 pr-9"
+              className="w-full appearance-none bg-white border border-black/5 rounded-2xl px-5 py-4 text-[13px] font-black uppercase tracking-widest italic text-tertiary focus:outline-none focus:ring-4 focus:ring-tertiary/10 transition-all pr-12 shadow-sm"
             >
               {LAND_OPTIONS.map(o => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </select>
-            <ChevronDown className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <ChevronDown className="w-4 h-4 text-tertiary/30 absolute right-4 top-1/2 -translate-y-1/2" />
           </div>
         </div>
       </div>
