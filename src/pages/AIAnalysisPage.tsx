@@ -235,11 +235,7 @@ export default function AIAnalysisPage() {
   }
 
   async function handleRunDetection() {
-    setCaptureMode(null);
     setSaved(false);
-    setImgLoaded(false);
-    setCapturedImageUrl(prev => { if (prev) URL.revokeObjectURL(prev); return null; });
-    setLocation({ latitude: null, longitude: null, source: null, loading: false, error: null, validation: null });
     await runDetection();
   }
 
