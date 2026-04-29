@@ -99,6 +99,37 @@ export interface LandValidationResult {
 
 export type ActivePage = 'dashboard' | 'ai-analysis' | 'history' | 'settings';
 
+// ── AI Pipeline Types ────────────────────────────────────────────────────────
+
+export type ImageQualityStatus = 'ok' | 'blurry' | 'metadata_stale' | 'location_mismatch';
+
+export type SensorCorrelation = 'verified' | 'contradiction' | 'nutrient_issue' | 'insufficient_data';
+
+export interface ActionStep {
+  phase: 'physical' | 'chemical' | 'monitoring';
+  label: string;
+  detail: string;
+  urgency: 'immediate' | 'within_24h' | 'routine';
+}
+
+export interface PipelineResult {
+  imageQuality: ImageQualityStatus;
+  imageQualityMessage: string;
+  metadataAgeHours: number | null;
+  locationDistanceM: number | null;
+  sensorCorrelation: SensorCorrelation;
+  sensorCorrelationMessage: string;
+  overriddenLabel: string | null;
+  scientificVerified: boolean;
+  severityScore: number;
+  severityLabel: 'Ringan' | 'Sedang' | 'Berat';
+  actionSteps: ActionStep[];
+}
+
+export interface EnrichedDetection extends AIDetection {
+  pipeline: PipelineResult;
+}
+
 export interface UserPreferences {
   user_id: string;
   active_mode: SystemType;

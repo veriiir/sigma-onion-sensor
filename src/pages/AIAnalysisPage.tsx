@@ -3,16 +3,20 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   BrainCircuit, Play, Save, CheckCircle, AlertTriangle, ShieldAlert,
   Scan, Info, Camera, Upload, MapPin, Loader2, MapPinOff, ChevronDown,
-  ShieldCheck, ShieldX, Navigation,
+  ShieldCheck, ShieldX, Navigation, ShieldQuestion, BadgeCheck,
+  Zap, FlaskConical, Leaf, Activity, Wrench, Clock,
 } from 'lucide-react';
 import exifr from 'exifr';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
-import { useAIDetection } from '../hooks/useAIDetection';
+import { useAIDetection, RunDetectionOptions } from '../hooks/useAIDetection';
 import { useNotification } from '../contexts/NotificationContext';
 import { useLands, validateLandCoords } from '../hooks/useLands';
 import { supabase } from '../lib/supabase';
-import { AIAnalysisRecord, Land, LandValidationResult } from '../types';
+import {
+  AIAnalysisRecord, Land, LandValidationResult,
+  PipelineResult, SensorCorrelation, ActionStep,
+} from '../types';
 import LandSelector from '../components/dashboard/LandSelector';
 
 const DISEASE_DATA: Record<string, { severity: 'high' | 'medium' | 'none'; recommendation: string }> = {
@@ -36,12 +40,44 @@ const DISEASE_DATA: Record<string, { severity: 'high' | 'medium' | 'none'; recom
     severity: 'none',
     recommendation: 'Tanaman dalam kondisi sehat. Pertahankan praktik budidaya yang baik, pantau secara rutin, dan jaga kebersihan lahan.',
   },
+  'Masalah Nutrisi Tanah': {
+    severity: 'medium',
+    recommendation: 'Koreksi pH dan kadar NPK tanah. Lakukan uji tanah dan aplikasi pupuk berimbang sesuai kebutuhan.',
+  },
 };
 
 const severityCfg = {
   high: { label: 'Risiko Tinggi', color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200', icon: <AlertTriangle className="w-4 h-4" /> },
   medium: { label: 'Risiko Sedang', color: 'text-tertiary', bg: 'bg-tertiary/10', border: 'border-tertiary/20', icon: <ShieldAlert className="w-4 h-4" /> },
   none: { label: 'Sehat', color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/20', icon: <CheckCircle className="w-4 h-4" /> },
+};
+
+const correlationCfg: Record<SensorCorrelation, { label: string; color: string; bg: string; border: string; icon: React.ReactNode }> = {
+  verified: { label: 'Terverifikasi Saintifik', color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/30', icon: <BadgeCheck className="w-4 h-4" /> },
+  contradiction: { label: 'Kontradiksi Sensor', color: 'text-tertiary', bg: 'bg-tertiary/10', border: 'border-tertiary/30', icon: <ShieldAlert className="w-4 h-4" /> },
+  nutrient_issue: { label: 'Masalah Nutrisi', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200', icon: <FlaskConical className="w-4 h-4" /> },
+  insufficient_data: { label: 'Data Sensor Terbatas', color: 'text-gray-500', bg: 'bg-gray-50', border: 'border-gray-200', icon: <ShieldQuestion className="w-4 h-4" /> },
+};
+
+const phaseIcon: Record<ActionStep['phase'], React.ReactNode> = {
+  physical: <Wrench className="w-3.5 h-3.5" />,
+  chemical: <FlaskConical className="w-3.5 h-3.5" />,
+  monitoring: <Activity className="w-3.5 h-3.5" />,
+};
+const phaseLabel: Record<ActionStep['phase'], string> = {
+  physical: 'Fisik',
+  chemical: 'Kimia',
+  monitoring: 'Pantau',
+};
+const urgencyColor: Record<ActionStep['urgency'], string> = {
+  immediate: 'text-red-600 bg-red-50 border-red-200',
+  within_24h: 'text-tertiary bg-tertiary/10 border-tertiary/20',
+  routine: 'text-gray-500 bg-gray-50 border-gray-200',
+};
+const urgencyLabel: Record<ActionStep['urgency'], string> = {
+  immediate: 'Segera',
+  within_24h: '< 24 Jam',
+  routine: 'Rutin',
 };
 
 const LAND_OPTIONS = [
@@ -57,6 +93,7 @@ interface LocationState {
   longitude: number | null;
   source: LocationSource;
   timestamp?: string;
+  photoTimestamp?: Date | null;
   loading: boolean;
   error: string | null;
   validation: LandValidationResult | null;
@@ -69,11 +106,101 @@ function formatCoord(val: number | null, dir: 'lat' | 'lon') {
   return `${abs}° ${label}`;
 }
 
+// ── Pipeline Status Panel ────────────────────────────────────────────────────
+
+function PipelineStatusPanel({ pipeline }: { pipeline: PipelineResult }) {
+  const corr = correlationCfg[pipeline.sensorCorrelation];
+  const sevColor = pipeline.severityLabel === 'Berat' ? 'bg-red-500' : pipeline.severityLabel === 'Sedang' ? 'bg-amber-400' : 'bg-primary';
+
+  return (
+    <div className="space-y-3">
+      {/* Lapis 1: Image Quality */}
+      {pipeline.imageQuality !== 'ok' && (
+        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+          <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-xs font-semibold text-amber-700">Peringatan Kualitas Gambar</p>
+            <p className="text-xs text-amber-600 mt-0.5">{pipeline.imageQualityMessage}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Lapis 2: Sensor Correlation */}
+      <div className={`flex items-start gap-3 rounded-xl border px-4 py-3 ${corr.bg} ${corr.border}`}>
+        <span className={`shrink-0 mt-0.5 ${corr.color}`}>{corr.icon}</span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className={`text-xs font-bold ${corr.color}`}>{corr.label}</p>
+            {pipeline.scientificVerified && (
+              <span className="text-[10px] bg-primary text-white px-1.5 py-0.5 rounded-full font-semibold">
+                Saintifik
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{pipeline.sensorCorrelationMessage}</p>
+        </div>
+      </div>
+
+      {/* Lapis 3: Severity Score */}
+      <div className="bg-white rounded-xl border border-gray-100 px-4 py-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold text-gray-600">Skor Keparahan</p>
+          <span className={`text-xs font-bold px-2 py-0.5 rounded-full text-white ${sevColor}`}>
+            {pipeline.severityLabel}
+          </span>
+        </div>
+        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${pipeline.severityScore}%` }}
+            transition={{ duration: 0.8 }}
+            className={`h-full rounded-full ${sevColor}`}
+          />
+        </div>
+        <p className="text-[10px] text-gray-400">
+          Area deteksi: {pipeline.severityScore}% dari total gambar
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ── Action Steps Panel ───────────────────────────────────────────────────────
+
+function ActionStepsPanel({ steps }: { steps: ActionStep[] }) {
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-3">
+      <h3 className="text-sm font-bold text-gray-700">Panduan Penanganan</h3>
+      <div className="space-y-2">
+        {steps.map((step, i) => (
+          <div key={i} className="flex items-start gap-3 rounded-xl border border-gray-100 bg-gray-50/50 px-3 py-2.5">
+            <div className="w-6 h-6 rounded-lg bg-white border border-gray-100 flex items-center justify-center shrink-0 text-gray-500 shadow-sm">
+              {phaseIcon[step.phase]}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+                <span className="text-[10px] font-bold text-gray-400 uppercase">{phaseLabel[step.phase]}</span>
+                <span className={`text-[10px] font-semibold border rounded-full px-1.5 py-px ${urgencyColor[step.urgency]}`}>
+                  {urgencyLabel[step.urgency]}
+                </span>
+              </div>
+              <p className="text-xs font-semibold text-gray-700">{step.label}</p>
+              <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{step.detail}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Main Page ────────────────────────────────────────────────────────────────
+
 export default function AIAnalysisPage() {
   const { activeMode, selectedLand, setSelectedLand } = useApp();
   const { user } = useAuth();
   const { push } = useNotification();
-  const { detection, analyzing, lastAnalyzed, runDetection } = useAIDetection(activeMode, selectedLand);
+  const { detection, analyzing, lastAnalyzed, runDetection } = useAIDetection(activeMode, selectedLand, user?.id ?? null);
   const { lands } = useLands(activeMode);
 
   const [saving, setSaving] = useState(false);
@@ -84,19 +211,16 @@ export default function AIAnalysisPage() {
   const [capturedImageUrl, setCapturedImageUrl] = useState<string | null>(null);
 
   const [location, setLocation] = useState<LocationState>({
-    latitude: null,
-    longitude: null,
-    source: null,
-    loading: false,
-    error: null,
-    validation: null,
+    latitude: null, longitude: null, source: null,
+    loading: false, error: null, validation: null,
   });
 
   const imgRef = useRef<HTMLImageElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
-  const diseaseInfo = detection ? (DISEASE_DATA[detection.label] ?? DISEASE_DATA['Sehat']) : null;
+  const effectiveLabel = detection?.label ?? '';
+  const diseaseInfo = detection ? (DISEASE_DATA[effectiveLabel] ?? DISEASE_DATA['Sehat']) : null;
   const severity = diseaseInfo?.severity ?? 'none';
   const sevCfg = severityCfg[severity];
   const hasLocation = location.latitude !== null && location.longitude !== null;
@@ -119,36 +243,28 @@ export default function AIAnalysisPage() {
     });
   }
 
-  function handleCameraCapture() {
-    cameraInputRef.current?.click();
-  }
+  function handleCameraCapture() { cameraInputRef.current?.click(); }
 
   async function processImageFile(file: File, mode: 'camera' | 'upload') {
     setCaptureMode(mode);
     setSaved(false);
     setImgLoaded(false);
 
-    // Buat object URL untuk preview gambar
     const objectUrl = URL.createObjectURL(file);
-    setCapturedImageUrl(prev => {
-      if (prev) URL.revokeObjectURL(prev);
-      return objectUrl;
-    });
+    setCapturedImageUrl(prev => { if (prev) URL.revokeObjectURL(prev); return objectUrl; });
 
     setLocation(s => ({ ...s, loading: true, error: null }));
 
     let coords: { latitude: number; longitude: number } | null = null;
     let source: LocationSource = null;
     let timestamp: string | undefined;
+    let photoTimestamp: Date | null = null;
     let error: string | null = null;
 
     if (mode === 'camera') {
       coords = await captureGPS();
-      if (coords) {
-        source = 'gps';
-      } else {
-        error = 'GPS tidak tersedia. Pilih lahan secara manual.';
-      }
+      if (coords) { source = 'gps'; photoTimestamp = new Date(); }
+      else { error = 'GPS tidak tersedia. Pilih lahan secara manual.'; }
     } else {
       try {
         const exifData = await exifr.gps(file);
@@ -157,8 +273,11 @@ export default function AIAnalysisPage() {
           source = 'exif';
           try {
             const full = await exifr.parse(file, ['DateTimeOriginal']);
-            if (full?.DateTimeOriginal) timestamp = new Date(full.DateTimeOriginal).toLocaleString('id-ID');
-          } catch { /* timestamp not critical */ }
+            if (full?.DateTimeOriginal) {
+              photoTimestamp = new Date(full.DateTimeOriginal);
+              timestamp = photoTimestamp.toLocaleString('id-ID');
+            }
+          } catch { /* optional */ }
         } else {
           error = 'Metadata GPS tidak ditemukan dalam foto. Pilih lahan secara manual.';
         }
@@ -170,23 +289,27 @@ export default function AIAnalysisPage() {
     let validation: LandValidationResult | null = null;
     if (coords) {
       validation = validateLandCoords(coords.latitude, coords.longitude, lands);
-      // Auto-pilih lahan terdekat jika cocok
-      if (validation.matched && validation.land) {
-        setSelectedLand(validation.land.id);
-      }
+      if (validation.matched && validation.land) setSelectedLand(validation.land.id);
     }
 
-    setLocation({
+    const newLocation: LocationState = {
       latitude: coords?.latitude ?? null,
       longitude: coords?.longitude ?? null,
-      source,
-      timestamp,
-      loading: false,
-      error,
-      validation,
-    });
+      source, timestamp, photoTimestamp, loading: false, error, validation,
+    };
+    setLocation(newLocation);
 
-    await runDetection();
+    // Find the current land object for pipeline metadata check
+    const currentLand = lands.find(l => l.id === selectedLand) ?? null;
+
+    // Wait for image to load so we can pass the element to the pipeline
+    const runOpts: RunDetectionOptions = {
+      photoTimestamp,
+      photoCoords: coords,
+      land: currentLand,
+      imageElement: imgRef.current,
+    };
+    await runDetection(runOpts);
   }
 
   async function handleCameraInputChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -236,7 +359,13 @@ export default function AIAnalysisPage() {
 
   async function handleRunDetection() {
     setSaved(false);
-    await runDetection();
+    const currentLand = lands.find(l => l.id === selectedLand) ?? null;
+    await runDetection({
+      imageElement: imgRef.current,
+      photoTimestamp: location.photoTimestamp ?? null,
+      photoCoords: hasLocation ? { latitude: location.latitude!, longitude: location.longitude! } : null,
+      land: currentLand,
+    });
   }
 
   return (
@@ -248,7 +377,7 @@ export default function AIAnalysisPage() {
           </div>
           <div>
             <h2 className="text-lg font-bold text-gray-900 uppercase tracking-tighter">SIGMA PATHOGEN INTELLIGENCE</h2>
-            <p className="text-sm text-neutral-muted font-medium">Model: penyakit-bawang/1 — Ambil foto atau unggah untuk memulai</p>
+            <p className="text-sm text-neutral-muted font-medium">Pipeline 3 Lapis — Visi Komputer + Validasi Sensor IoT</p>
           </div>
         </div>
         {activeMode === 'panel' && (
@@ -268,7 +397,6 @@ export default function AIAnalysisPage() {
             </p>
           </div>
 
-          {/* Hidden inputs (shared) */}
           <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCameraInputChange} />
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
 
@@ -291,14 +419,16 @@ export default function AIAnalysisPage() {
 
           <div className="flex items-center gap-2 text-xs text-gray-400 bg-gray-50 px-4 py-2 rounded-xl">
             <Info className="w-3.5 h-3.5 shrink-0" />
-            Kamera akan menangkap GPS real-time. Galeri akan membaca metadata EXIF foto.
+            Kamera menangkap GPS real-time. Galeri membaca metadata EXIF foto.
           </div>
         </div>
       )}
 
       {(detection || analyzing) && (
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-          <div className="lg:col-span-3 space-y-6">
+          {/* ── Kolom Kiri ── */}
+          <div className="lg:col-span-3 space-y-4">
+            {/* Image Card */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
                 <div className="flex items-center gap-2 text-primary">
@@ -306,42 +436,24 @@ export default function AIAnalysisPage() {
                   <span className="text-sm font-semibold text-gray-700">Gambar Capture Lapangan</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={analyzing}
-                    className="flex items-center gap-1.5 text-xs bg-white hover:bg-gray-50 border border-gray-200 disabled:opacity-50 text-gray-600 px-3 py-1.5 rounded-lg transition-colors font-medium"
-                  >
-                    <Upload className="w-3.5 h-3.5" />
-                    Ganti Foto
+                  <button onClick={() => fileInputRef.current?.click()} disabled={analyzing}
+                    className="flex items-center gap-1.5 text-xs bg-white hover:bg-gray-50 border border-gray-200 disabled:opacity-50 text-gray-600 px-3 py-1.5 rounded-lg transition-colors font-medium">
+                    <Upload className="w-3.5 h-3.5" /> Ganti Foto
                   </button>
-                  <button
-                    onClick={handleCameraCapture}
-                    disabled={analyzing}
-                    className="flex items-center gap-1.5 text-xs bg-white hover:bg-gray-50 border border-gray-200 disabled:opacity-50 text-gray-600 px-3 py-1.5 rounded-lg transition-colors font-medium"
-                  >
-                    <Camera className="w-3.5 h-3.5" />
-                    Kamera
+                  <button onClick={handleCameraCapture} disabled={analyzing}
+                    className="flex items-center gap-1.5 text-xs bg-white hover:bg-gray-50 border border-gray-200 disabled:opacity-50 text-gray-600 px-3 py-1.5 rounded-lg transition-colors font-medium">
+                    <Camera className="w-3.5 h-3.5" /> Kamera
                   </button>
-                  <button
-                    onClick={handleRunDetection}
-                    disabled={analyzing}
-                    className="flex items-center gap-1.5 text-xs bg-primary hover:bg-primary disabled:bg-gray-200 text-white px-3 py-1.5 rounded-lg transition-colors font-medium"
-                  >
+                  <button onClick={handleRunDetection} disabled={analyzing}
+                    className="flex items-center gap-1.5 text-xs bg-primary hover:bg-primary/90 disabled:bg-gray-200 text-white px-3 py-1.5 rounded-lg transition-colors font-medium">
                     <Play className="w-3.5 h-3.5" />
                     {analyzing ? 'Menganalisis...' : 'Analisis Ulang'}
                   </button>
                 </div>
               </div>
 
-              {/* Hidden camera input */}
-              <input
-                ref={cameraInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-                onChange={handleCameraInputChange}
-              />
+              <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCameraInputChange} />
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
 
               <div className="relative bg-gray-900 aspect-video overflow-hidden">
                 <img
@@ -356,11 +468,11 @@ export default function AIAnalysisPage() {
                   <div className="absolute inset-0 bg-[#14261D]/80 flex flex-col items-center justify-center gap-6">
                     <div className="w-16 h-16 border-4 border-secondary/10 border-t-secondary rounded-full animate-spin shadow-2xl" />
                     <div className="text-center">
-                      <p className="text-white font-semibold">Menganalisis Citra...</p>
-                      <p className="text-secondary font-bold text-xs uppercase mt-2 tracking-[0.2em] animate-pulse">Model penyakit-bawang/1 sedang berjalan</p>
+                      <p className="text-white font-semibold">Pipeline 3 Lapis Berjalan...</p>
+                      <p className="text-secondary font-bold text-xs uppercase mt-2 tracking-[0.2em] animate-pulse">Validasi Gambar → Sensor → Aksi</p>
                     </div>
                     <div className="flex gap-3">
-                      {['Pra-proses', 'Inferensi', 'Post-process'].map((s, i) => (
+                      {['Kualitas', 'Inferensi', 'Korelasi'].map((s, i) => (
                         <div key={s} className="flex items-center gap-1">
                           <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
                           <span className="text-primary-300/70 text-xs">{s}</span>
@@ -372,12 +484,7 @@ export default function AIAnalysisPage() {
 
                 {!analyzing && detection && imgLoaded && bboxStyle && (
                   <AnimatePresence>
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="absolute"
-                      style={bboxStyle}
-                    >
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute" style={bboxStyle}>
                       <div className={`w-full h-full border-2 rounded-sm relative ${severity === 'none' ? 'border-primary' : severity === 'high' ? 'border-red-400' : 'border-tertiary'}`}>
                         <div className={`absolute -top-6 left-0 px-2 py-0.5 rounded text-xs font-bold text-white whitespace-nowrap ${severity === 'none' ? 'bg-primary' : severity === 'high' ? 'bg-red-500' : 'bg-tertiary'}`}>
                           {detection.label} — {detection.confidence.toFixed(1)}%
@@ -389,7 +496,7 @@ export default function AIAnalysisPage() {
                 )}
 
                 <div className="absolute bottom-3 right-3 flex items-center gap-2 bg-[#14261D] rounded-full px-4 py-2 border border-white/10 shadow-2xl">
-                  <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse shadow-glow shadow-primary" />
+                  <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
                   <span className="text-white text-xs font-medium">SIGMA CAM</span>
                 </div>
               </div>
@@ -404,35 +511,33 @@ export default function AIAnalysisPage() {
               lands={lands}
             />
 
+            {/* Save Bar */}
             {!analyzing && detection && (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-5 py-4 flex items-center gap-4">
                 {lastAnalyzed && (
-                  <p className="text-xs text-gray-400 flex-1">
-                    Dianalisis: {lastAnalyzed.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                  <p className="text-xs text-gray-400 flex-1 flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {lastAnalyzed.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                   </p>
                 )}
                 <button
                   onClick={handleSaveToHistory}
                   disabled={saving || saved}
                   className={`flex items-center gap-2 font-semibold px-5 py-2.5 rounded-xl transition-all duration-200 text-sm ${
-                    saved
-                      ? 'bg-primary/10 text-primary shadow-inner border border-primary/20'
+                    saved ? 'bg-primary/10 text-primary shadow-inner border border-primary/20'
                       : 'bg-primary text-white hover:opacity-90 shadow-primary/20 active:scale-95'
                   }`}
                 >
-                  {saving ? (
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : saved ? (
-                    <CheckCircle className="w-4 h-4" />
-                  ) : (
-                    <Save className="w-4 h-4" />
-                  )}
+                  {saving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    : saved ? <CheckCircle className="w-4 h-4" />
+                    : <Save className="w-4 h-4" />}
                   {saving ? 'Menyimpan...' : saved ? 'Tersimpan!' : 'Simpan ke Riwayat'}
                 </button>
               </div>
             )}
           </div>
 
+          {/* ── Kolom Kanan ── */}
           <div className="lg:col-span-2 space-y-4">
             <AnimatePresence mode="wait">
               {analyzing ? (
@@ -440,22 +545,25 @@ export default function AIAnalysisPage() {
                   className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 flex flex-col items-center gap-4 text-center"
                 >
                   <div className="w-14 h-14 border-4 border-primary/5 border-t-primary rounded-full animate-spin shadow-lg" />
-                  <p className="text-gray-500 font-medium">Memproses gambar tanaman...</p>
+                  <p className="text-gray-500 font-medium">Memproses pipeline analisis...</p>
                 </motion.div>
               ) : detection && (
-                <motion.div key={detection.label} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}
-                  transition={{ duration: 0.3 }} className="space-y-4"
+                <motion.div key={detection.label} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="space-y-4"
                 >
+                  {/* Detection Result */}
                   <div className={`bg-white rounded-2xl shadow-sm border p-5 ${sevCfg.border}`}>
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-sm font-bold text-gray-700">Hasil Deteksi</h3>
                       <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${sevCfg.bg} ${sevCfg.color}`}>
-                        {sevCfg.icon}
-                        {sevCfg.label}
+                        {sevCfg.icon} {sevCfg.label}
                       </div>
                     </div>
                     <div className="text-center py-2">
                       <p className="text-2xl font-bold text-gray-900">{detection.label}</p>
+                      {detection.pipeline?.overriddenLabel && (
+                        <p className="text-xs text-blue-500 mt-1">Dikoreksi dari hasil AI asli</p>
+                      )}
                       <p className="text-gray-400 text-sm mt-1">Patogen Terdeteksi</p>
                       <div className="mt-4">
                         <div className="flex justify-between text-xs text-gray-400 mb-1.5">
@@ -474,11 +582,23 @@ export default function AIAnalysisPage() {
                     </div>
                   </div>
 
+                  {/* Pipeline Status */}
+                  {detection.pipeline && (
+                    <PipelineStatusPanel pipeline={detection.pipeline} />
+                  )}
+
+                  {/* Action Steps */}
+                  {detection.pipeline?.actionSteps && detection.pipeline.actionSteps.length > 0 && (
+                    <ActionStepsPanel steps={detection.pipeline.actionSteps} />
+                  )}
+
+                  {/* Recommendation */}
                   <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-                    <h3 className="text-sm font-bold text-gray-700 mb-3">Rekomendasi Tindakan</h3>
+                    <h3 className="text-sm font-bold text-gray-700 mb-3">Ringkasan Rekomendasi</h3>
                     <p className="text-sm text-gray-500 leading-relaxed">{diseaseInfo?.recommendation}</p>
                   </div>
 
+                  {/* Model Info */}
                   <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
                     <h3 className="text-sm font-bold text-gray-700 mb-3">Info Model & Deteksi</h3>
                     <div className="space-y-2">
@@ -507,12 +627,10 @@ export default function AIAnalysisPage() {
   );
 }
 
+// ── Location Card (unchanged logic) ─────────────────────────────────────────
+
 function LocationCard({
-  location,
-  captureMode,
-  manualLand,
-  onManualLandChange,
-  lands,
+  location, captureMode, manualLand, onManualLandChange, lands,
 }: {
   location: LocationState;
   captureMode: 'camera' | 'upload' | null;
@@ -537,12 +655,9 @@ function LocationCard({
 
   if (hasLocation) {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
+      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
         className="bg-secondary/5 rounded-[2rem] border-2 border-dashed border-secondary/10 px-8 py-6 shadow-sm shadow-secondary/5 space-y-4"
       >
-        {/* Koordinat header */}
         <div className="flex items-start gap-4">
           <div className="w-11 h-11 bg-secondary rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-secondary/20">
             <MapPin className="w-6 h-6 text-white" />
@@ -565,22 +680,16 @@ function LocationCard({
               </div>
             </div>
             {location.timestamp && (
-              <p className="text-xs text-secondary/70 mt-1.5">
-                Waktu Foto: {location.timestamp}
-              </p>
+              <p className="text-xs text-secondary/70 mt-1.5">Waktu Foto: {location.timestamp}</p>
             )}
           </div>
         </div>
 
-        {/* Validasi lahan */}
         {landsWithCoords.length > 0 && val && (
           <div className={`rounded-2xl border px-4 py-3.5 ${val.withinRadius ? 'bg-teal-50 border-teal-200' : 'bg-red-50 border-red-200'}`}>
             <div className="flex items-start gap-3">
               <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${val.withinRadius ? 'bg-teal-500' : 'bg-red-500'}`}>
-                {val.withinRadius
-                  ? <ShieldCheck className="w-4 h-4 text-white" />
-                  : <ShieldX className="w-4 h-4 text-white" />
-                }
+                {val.withinRadius ? <ShieldCheck className="w-4 h-4 text-white" /> : <ShieldX className="w-4 h-4 text-white" />}
               </div>
               <div className="flex-1 min-w-0">
                 <p className={`text-sm font-semibold ${val.withinRadius ? 'text-teal-700' : 'text-red-700'}`}>
@@ -596,7 +705,7 @@ function LocationCard({
                 )}
                 {!val.withinRadius && val.land && (
                   <p className="text-xs text-red-500 mt-1">
-                    Melebihi radius toleransi {val.land.radius_m ?? 500} m. Pastikan foto diambil di lokasi yang benar.
+                    Melebihi radius toleransi {val.land.radius_m ?? 500} m.
                   </p>
                 )}
               </div>
@@ -604,7 +713,6 @@ function LocationCard({
           </div>
         )}
 
-        {/* Jika lands belum ada koordinat, tampilkan info */}
         {landsWithCoords.length === 0 && (
           <div className="flex items-center gap-2.5 bg-white/70 rounded-xl border border-teal-100 px-4 py-3">
             <Navigation className="w-4 h-4 text-secondary shrink-0" />
@@ -618,9 +726,7 @@ function LocationCard({
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
+    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
       className="bg-tertiary/10 rounded-2xl border border-tertiary/20 px-5 py-4"
     >
       <div className="flex items-start gap-3">
@@ -628,21 +734,15 @@ function LocationCard({
           <MapPinOff className="w-4 h-4 text-tertiary opacity-40" />
         </div>
         <div className="flex-1">
-          {location.error && (
-            <p className="text-sm text-tertiary font-medium mb-3">{location.error}</p>
-          )}
-          {!location.error && (
-            <p className="text-sm text-tertiary font-medium mb-3">Pilih lahan untuk melanjutkan penyimpanan.</p>
-          )}
+          {location.error && <p className="text-sm text-tertiary font-medium mb-3">{location.error}</p>}
+          {!location.error && <p className="text-sm text-tertiary font-medium mb-3">Pilih lahan untuk melanjutkan penyimpanan.</p>}
           <div className="relative">
             <select
               value={manualLand}
               onChange={e => onManualLandChange(e.target.value)}
               className="w-full appearance-none bg-white border border-black/5 rounded-2xl px-5 py-4 text-[13px] font-black uppercase tracking-widest italic text-tertiary focus:outline-none focus:ring-4 focus:ring-tertiary/10 transition-all pr-12 shadow-sm"
             >
-              {LAND_OPTIONS.map(o => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
+              {LAND_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
             <ChevronDown className="w-4 h-4 text-tertiary/30 absolute right-4 top-1/2 -translate-y-1/2" />
           </div>
