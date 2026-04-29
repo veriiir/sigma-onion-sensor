@@ -4,12 +4,13 @@ import {
   BrainCircuit, Play, Save, CheckCircle, AlertTriangle, ShieldAlert,
   Scan, Info, Camera, Upload, MapPin, Loader2, MapPinOff, ChevronDown,
   ShieldCheck, ShieldX, Navigation, ShieldQuestion, BadgeCheck,
-  Zap, FlaskConical, Leaf, Activity, Wrench, Clock,
+  FlaskConical, Activity, Wrench, Clock,
 } from 'lucide-react';
 import exifr from 'exifr';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useAIDetection, RunDetectionOptions } from '../hooks/useAIDetection';
+import { useAnalysisSession, fileToBase64, type PersistedLocation } from '../hooks/useAnalysisSession';
 import { useNotification } from '../contexts/NotificationContext';
 import { useLands, validateLandCoords } from '../hooks/useLands';
 import { supabase } from '../lib/supabase';
@@ -87,17 +88,6 @@ const LAND_OPTIONS = [
 ];
 
 type LocationSource = 'gps' | 'exif' | 'manual' | null;
-
-interface LocationState {
-  latitude: number | null;
-  longitude: number | null;
-  source: LocationSource;
-  timestamp?: string;
-  photoTimestamp?: Date | null;
-  loading: boolean;
-  error: string | null;
-  validation: LandValidationResult | null;
-}
 
 function formatCoord(val: number | null, dir: 'lat' | 'lon') {
   if (val === null) return '—';
@@ -202,28 +192,27 @@ export default function AIAnalysisPage() {
   const { push } = useNotification();
   const { detection, analyzing, lastAnalyzed, runDetection } = useAIDetection(activeMode, selectedLand, user?.id ?? null);
   const { lands } = useLands(activeMode);
+  const { session, updateSession } = useAnalysisSession(activeMode, selectedLand);
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
-  const [captureMode, setCaptureMode] = useState<'camera' | 'upload' | null>(null);
-  const [manualLand, setManualLand] = useState('lahan1');
-  const [capturedImageUrl, setCapturedImageUrl] = useState<string | null>(null);
-
-  const [location, setLocation] = useState<LocationState>({
-    latitude: null, longitude: null, source: null,
-    loading: false, error: null, validation: null,
-  });
+  // locationLoading is transient — not persisted
+  const [locationLoading, setLocationLoading] = useState(false);
+  // Restore validation from detection if available (validation object not stored)
+  const [locationValidation, setLocationValidation] = useState<LandValidationResult | null>(null);
 
   const imgRef = useRef<HTMLImageElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
+  const { capturedImageBase64, captureMode, location: loc, manualLand } = session;
+
   const effectiveLabel = detection?.label ?? '';
   const diseaseInfo = detection ? (DISEASE_DATA[effectiveLabel] ?? DISEASE_DATA['Sehat']) : null;
   const severity = diseaseInfo?.severity ?? 'none';
   const sevCfg = severityCfg[severity];
-  const hasLocation = location.latitude !== null && location.longitude !== null;
+  const hasLocation = loc.latitude !== null && loc.longitude !== null;
 
   const bboxStyle = detection && imgLoaded && imgRef.current ? {
     left: `${detection.bbox_x * 100}%`,
@@ -246,14 +235,13 @@ export default function AIAnalysisPage() {
   function handleCameraCapture() { cameraInputRef.current?.click(); }
 
   async function processImageFile(file: File, mode: 'camera' | 'upload') {
-    setCaptureMode(mode);
     setSaved(false);
     setImgLoaded(false);
+    setLocationLoading(true);
 
-    const objectUrl = URL.createObjectURL(file);
-    setCapturedImageUrl(prev => { if (prev) URL.revokeObjectURL(prev); return objectUrl; });
-
-    setLocation(s => ({ ...s, loading: true, error: null }));
+    // Convert to base64 so it survives navigation
+    const base64 = await fileToBase64(file);
+    updateSession({ capturedImageBase64: base64, captureMode: mode });
 
     let coords: { latitude: number; longitude: number } | null = null;
     let source: LocationSource = null;
@@ -291,25 +279,27 @@ export default function AIAnalysisPage() {
       validation = validateLandCoords(coords.latitude, coords.longitude, lands);
       if (validation.matched && validation.land) setSelectedLand(validation.land.id);
     }
+    setLocationValidation(validation);
 
-    const newLocation: LocationState = {
-      latitude: coords?.latitude ?? null,
-      longitude: coords?.longitude ?? null,
-      source, timestamp, photoTimestamp, loading: false, error, validation,
-    };
-    setLocation(newLocation);
+    updateSession({
+      location: {
+        latitude: coords?.latitude ?? null,
+        longitude: coords?.longitude ?? null,
+        source,
+        timestamp,
+        photoTimestamp: photoTimestamp?.toISOString() ?? null,
+        error,
+      },
+    });
+    setLocationLoading(false);
 
-    // Find the current land object for pipeline metadata check
     const currentLand = lands.find(l => l.id === selectedLand) ?? null;
-
-    // Wait for image to load so we can pass the element to the pipeline
-    const runOpts: RunDetectionOptions = {
+    await runDetection({
       photoTimestamp,
       photoCoords: coords,
       land: currentLand,
       imageElement: imgRef.current,
-    };
-    await runDetection(runOpts);
+    });
   }
 
   async function handleCameraInputChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -337,14 +327,14 @@ export default function AIAnalysisPage() {
       disease_name: detection.label,
       confidence: detection.confidence,
       recommendation: diseaseInfo.recommendation,
-      image_url: capturedImageUrl ?? detection.image_url,
+      image_url: capturedImageBase64 ?? detection.image_url,
       bbox_x: detection.bbox_x,
       bbox_y: detection.bbox_y,
       bbox_width: detection.bbox_width,
       bbox_height: detection.bbox_height,
-      latitude: location.latitude,
-      longitude: location.longitude,
-      location_source: hasLocation ? location.source : 'manual',
+      latitude: loc.latitude,
+      longitude: loc.longitude,
+      location_source: hasLocation ? loc.source : 'manual',
     };
 
     await supabase.from('ai_analysis').insert(record);
@@ -360,10 +350,11 @@ export default function AIAnalysisPage() {
   async function handleRunDetection() {
     setSaved(false);
     const currentLand = lands.find(l => l.id === selectedLand) ?? null;
+    const photoTimestamp = loc.photoTimestamp ? new Date(loc.photoTimestamp) : null;
     await runDetection({
       imageElement: imgRef.current,
-      photoTimestamp: location.photoTimestamp ?? null,
-      photoCoords: hasLocation ? { latitude: location.latitude!, longitude: location.longitude! } : null,
+      photoTimestamp,
+      photoCoords: hasLocation ? { latitude: loc.latitude!, longitude: loc.longitude! } : null,
       land: currentLand,
     });
   }
@@ -456,10 +447,10 @@ export default function AIAnalysisPage() {
               <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
 
               <div className="relative bg-gray-900 aspect-video overflow-hidden">
-                {capturedImageUrl ? (
+                {capturedImageBase64 ? (
                   <img
                     ref={imgRef}
-                    src={capturedImageUrl}
+                    src={capturedImageBase64}
                     alt="Tangkapan kamera lapangan"
                     onLoad={() => setImgLoaded(true)}
                     className="w-full h-full object-cover"
@@ -511,10 +502,12 @@ export default function AIAnalysisPage() {
 
             {/* Location Card */}
             <LocationCard
-              location={location}
+              location={loc}
+              locationLoading={locationLoading}
+              validation={locationValidation}
               captureMode={captureMode}
               manualLand={manualLand}
-              onManualLandChange={setManualLand}
+              onManualLandChange={v => updateSession({ manualLand: v })}
               lands={lands}
             />
 
@@ -634,22 +627,23 @@ export default function AIAnalysisPage() {
   );
 }
 
-// ── Location Card (unchanged logic) ─────────────────────────────────────────
+// ── Location Card ────────────────────────────────────────────────────────────
 
 function LocationCard({
-  location, captureMode, manualLand, onManualLandChange, lands,
+  location, locationLoading, validation, captureMode, manualLand, onManualLandChange, lands,
 }: {
-  location: LocationState;
+  location: PersistedLocation;
+  locationLoading: boolean;
+  validation: LandValidationResult | null;
   captureMode: 'camera' | 'upload' | null;
   manualLand: string;
   onManualLandChange: (v: string) => void;
   lands: Land[];
 }) {
   const hasLocation = location.latitude !== null && location.longitude !== null;
-  const val = location.validation;
   const landsWithCoords = lands.filter(l => l.latitude != null && l.longitude != null);
 
-  if (location.loading) {
+  if (locationLoading) {
     return (
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-5 py-4 flex items-center gap-3">
         <Loader2 className="w-4 h-4 text-primary animate-spin shrink-0" />
@@ -692,27 +686,27 @@ function LocationCard({
           </div>
         </div>
 
-        {landsWithCoords.length > 0 && val && (
-          <div className={`rounded-2xl border px-4 py-3.5 ${val.withinRadius ? 'bg-teal-50 border-teal-200' : 'bg-red-50 border-red-200'}`}>
+        {landsWithCoords.length > 0 && validation && (
+          <div className={`rounded-2xl border px-4 py-3.5 ${validation.withinRadius ? 'bg-teal-50 border-teal-200' : 'bg-red-50 border-red-200'}`}>
             <div className="flex items-start gap-3">
-              <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${val.withinRadius ? 'bg-teal-500' : 'bg-red-500'}`}>
-                {val.withinRadius ? <ShieldCheck className="w-4 h-4 text-white" /> : <ShieldX className="w-4 h-4 text-white" />}
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${validation.withinRadius ? 'bg-teal-500' : 'bg-red-500'}`}>
+                {validation.withinRadius ? <ShieldCheck className="w-4 h-4 text-white" /> : <ShieldX className="w-4 h-4 text-white" />}
               </div>
               <div className="flex-1 min-w-0">
-                <p className={`text-sm font-semibold ${val.withinRadius ? 'text-teal-700' : 'text-red-700'}`}>
-                  {val.withinRadius ? 'Lokasi Valid — Cocok dengan Lahan' : 'Lokasi di Luar Batas Lahan'}
+                <p className={`text-sm font-semibold ${validation.withinRadius ? 'text-teal-700' : 'text-red-700'}`}>
+                  {validation.withinRadius ? 'Lokasi Valid — Cocok dengan Lahan' : 'Lokasi di Luar Batas Lahan'}
                 </p>
-                {val.land && (
-                  <p className={`text-xs mt-0.5 ${val.withinRadius ? 'text-teal-600' : 'text-red-600'}`}>
-                    Lahan terdekat: <span className="font-semibold">{val.land.label}</span>
-                    {val.distanceM != null && (
-                      <span className="ml-1 opacity-70">({val.distanceM < 1000 ? `${val.distanceM} m` : `${(val.distanceM / 1000).toFixed(1)} km`})</span>
+                {validation.land && (
+                  <p className={`text-xs mt-0.5 ${validation.withinRadius ? 'text-teal-600' : 'text-red-600'}`}>
+                    Lahan terdekat: <span className="font-semibold">{validation.land.label}</span>
+                    {validation.distanceM != null && (
+                      <span className="ml-1 opacity-70">({validation.distanceM < 1000 ? `${validation.distanceM} m` : `${(validation.distanceM / 1000).toFixed(1)} km`})</span>
                     )}
                   </p>
                 )}
-                {!val.withinRadius && val.land && (
+                {!validation.withinRadius && validation.land && (
                   <p className="text-xs text-red-500 mt-1">
-                    Melebihi radius toleransi {val.land.radius_m ?? 500} m.
+                    Melebihi radius toleransi {validation.land.radius_m ?? 500} m.
                   </p>
                 )}
               </div>
