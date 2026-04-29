@@ -179,6 +179,8 @@ function PortableDashboard() {
           <StatBadge icon={<Zap className="w-5 h-5 text-primary" />} label="Sensor Optimal" value={`${healthyCount} / 7 OK`} color="bg-primary/10" />
         </div>
 
+        <AIStatusBanner systemType={activeMode} landId={selectedLand} />
+
         <div>
           <div className="flex items-center justify-between mb-4 border-b border-black/5 pb-2">
             <h3 className="text-base font-black text-gray-800 tracking-tighter uppercase leading-none">
@@ -192,8 +194,6 @@ function PortableDashboard() {
             ))}
           </div>
         </div>
-
-        <AIStatusBanner systemType={activeMode} landId={selectedLand} />
       </motion.div>
     </div>
   );
@@ -248,6 +248,8 @@ function PanelDashboard() {
           <StatBadge icon={<Zap className="w-5 h-5 text-primary" />} label="Sensor Optimal" value={`${healthyCount} / 7`} color="bg-primary/10" />
         </div>
 
+        <AIStatusBanner systemType={activeMode} landId={selectedLand} />
+
         <div>
           <div className="flex items-center justify-between mb-4 border-b border-black/5 pb-2">
             <h3 className="text-base font-black text-gray-800 tracking-tighter uppercase leading-none">
@@ -261,8 +263,6 @@ function PanelDashboard() {
             ))}
           </div>
         </div>
-
-        <AIStatusBanner systemType={activeMode} landId={selectedLand} />
       </motion.div>
     </div>
   );
