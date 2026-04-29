@@ -41,7 +41,7 @@ export default function SettingsPage() {
     return (
       <button
         onClick={() => onChange(!on)}
-        className={`w-10 h-6 rounded-full transition-colors duration-200 relative ${on ? 'bg-teal-500' : 'bg-gray-200'}`}
+        className={`w-10 h-6 rounded-full transition-colors duration-200 relative ${on ? 'bg-primary shadow-primary/20' : 'bg-gray-200'}`}
       >
         <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${on ? 'translate-x-4' : 'translate-x-0.5'}`} />
       </button>
@@ -49,20 +49,20 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-5 max-w-2xl">
+    <div className="space-y-5 max-w-7xl">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-teal-100 rounded-xl flex items-center justify-center">
-          <Settings className="w-5 h-5 text-teal-600" />
+        <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary shadow-lg shadow-primary/5">
+          <Settings className="w-6 h-6" />
         </div>
         <div>
-          <h2 className="text-lg font-bold text-gray-900">Pengaturan</h2>
-          <p className="text-sm text-gray-400">Kelola akun dan preferensi sistem</p>
+          <h2 className="text-lg font-bold text-gray-900 uppercase tracking-tighter">Pengaturan</h2>
+          <p className="text-sm text-neutral-muted font-medium">Kelola akun dan preferensi sistem</p>
         </div>
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
         <h3 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
-          <User className="w-4 h-4 text-teal-500" />
+          <User className="w-4 h-4 text-primary" />
           Profil Pengguna
         </h3>
         <div className="space-y-4">
@@ -90,7 +90,7 @@ export default function SettingsPage() {
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
         <h3 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
-          <Smartphone className="w-4 h-4 text-teal-500" />
+          <Smartphone className="w-4 h-4 text-primary" />
           Tipe Perangkat Utama
         </h3>
         <div className="grid grid-cols-2 gap-3">
@@ -100,7 +100,7 @@ export default function SettingsPage() {
               onClick={() => setActiveMode(type)}
               className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-200 ${
                 activeMode === type
-                  ? 'border-teal-500 bg-teal-50 text-teal-700'
+                  ? 'border-primary bg-primary/5 text-primary scale-105 shadow-primary/10'
                   : 'border-gray-200 text-gray-500 hover:border-gray-300'
               }`}
             >
@@ -109,7 +109,7 @@ export default function SettingsPage() {
                 <p className="text-sm font-semibold">{type === 'portable' ? 'Portable' : 'Panel Tetap'}</p>
                 <p className="text-xs opacity-70 mt-0.5">{type === 'portable' ? 'Sensor Genggam' : 'Stasiun Tetap'}</p>
               </div>
-              {activeMode === type && <Check className="w-4 h-4 text-teal-500 ml-auto" />}
+              {activeMode === type && <Check className="w-4 h-4 text-primary ml-auto" />}
             </button>
           ))}
         </div>
@@ -117,7 +117,7 @@ export default function SettingsPage() {
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
         <h3 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-          <Bell className="w-4 h-4 text-teal-500" />
+          <Bell className="w-4 h-4 text-primary" />
           Notifikasi & Sinkronisasi
         </h3>
         <SettingRow icon={<Bell className="w-4 h-4 text-gray-500" />} label="Notifikasi Peringatan" desc="Dapatkan notifikasi saat sensor di luar rentang">
@@ -130,7 +130,7 @@ export default function SettingsPage() {
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
         <h3 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-          <Info className="w-4 h-4 text-teal-500" />
+          <Info className="w-4 h-4 text-primary" />
           Tentang Aplikasi
         </h3>
         {[
@@ -151,7 +151,7 @@ export default function SettingsPage() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="flex items-center gap-2 bg-teal-500 hover:bg-teal-400 disabled:bg-teal-300 text-white font-semibold px-6 py-3 rounded-xl transition-all duration-200 shadow-sm shadow-teal-200"
+          className="flex items-center gap-2 bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold px-6 py-3 rounded-xl transition-all duration-700 shadow-sm shadow-primary/20"
         >
           {saving ? (
             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

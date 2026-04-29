@@ -48,8 +48,8 @@ const DISEASE_SEVERITY: Record<string, 'high' | 'medium' | 'none'> = {
 
 const severityCfg = {
   high: { label: 'Risiko Tinggi', color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200', dot: 'bg-red-500', icon: <AlertTriangle className="w-4 h-4" /> },
-  medium: { label: 'Risiko Sedang', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200', dot: 'bg-amber-500', icon: <ShieldAlert className="w-4 h-4" /> },
-  none: { label: 'Sehat', color: 'text-teal-600', bg: 'bg-teal-50', border: 'border-teal-200', dot: 'bg-teal-500', icon: <CheckCircle className="w-4 h-4" /> },
+  medium: { label: 'Risiko Sedang', color: 'text-tertiary', bg: 'bg-tertiary/10', border: 'border-tertiary/20', dot: 'bg-amber-500', icon: <ShieldAlert className="w-4 h-4" /> },
+  none: { label: 'Sehat', color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/20', dot: 'bg-primary', icon: <CheckCircle className="w-4 h-4" /> },
 };
 
 function SensorDetailModal({ record, onClose }: { record: SensorReading; onClose: () => void }) {
@@ -71,16 +71,16 @@ function SensorDetailModal({ record, onClose }: { record: SensorReading; onClose
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-teal-100 rounded-xl flex items-center justify-center">
-              <Thermometer className="w-4.5 h-4.5 text-teal-600" />
+            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary shadow-sm">
+              <Thermometer className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-gray-900">Detail Pembacaan Sensor</h3>
-              <p className="text-xs text-gray-400">{record.created_at ? formatDate(record.created_at) : '—'}</p>
+              <h3 className="text-sm tracking-tighter">Detail Pembacaan Sensor</h3>
+              <p className="text-[10px] text-neutral-muted opacity-60 ">{record.created_at ? formatDate(record.created_at) : '—'}</p>
             </div>
           </div>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100 transition-colors">
-            <X className="w-4 h-4 text-gray-500" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -98,22 +98,22 @@ function SensorDetailModal({ record, onClose }: { record: SensorReading; onClose
             const isGood = val >= c.goodMin && val <= c.goodMax;
             const pct = Math.min(100, Math.max(0, ((val - c.min) / (c.max - c.min)) * 100));
             return (
-              <div key={c.key} className={`rounded-xl border p-3.5 ${isGood ? 'border-teal-100 bg-teal-50/40' : 'border-amber-100 bg-amber-50/40'}`}>
+              <div key={c.key} className={`rounded-xl border p-3.5 ${isGood ? 'border-primary/20 bg-primary/5' : 'border-tertiary/20 bg-tertiary/5'}`}>
                 <div className="flex items-center gap-2 mb-2">
-                  <span className={isGood ? 'text-teal-500' : 'text-amber-500'}>{SENSOR_ICONS[c.key]}</span>
-                  <span className="text-xs text-gray-500 font-medium">{c.label}</span>
+                  <span className={isGood ? 'text-primary' : 'text-tertiary'}>{SENSOR_ICONS[c.key]}</span>
+                  <span className="text-neutral-muted opacity-50">{c.label}</span>
                 </div>
-                <p className={`text-xl font-bold ${isGood ? 'text-teal-700' : 'text-amber-700'}`}>
+                <p className={`text-xl font-bold ${isGood ? 'text-primary' : 'text-tertiary'}`}>
                   {c.key === 'conductivity' ? val.toFixed(3) : c.key === 'ph' ? val.toFixed(2) : val.toFixed(1)}
                   <span className="text-xs font-normal text-gray-400 ml-1">{c.unit}</span>
                 </p>
                 <div className="mt-2 h-1.5 bg-white rounded-full overflow-hidden border border-gray-100">
                   <div
-                    className={`h-full rounded-full transition-all ${isGood ? 'bg-teal-500' : 'bg-amber-500'}`}
+                    className={`h-full rounded-full transition-all ${isGood ? 'bg-primary' : 'bg-tertiary'}`}
                     style={{ width: `${pct}%` }}
                   />
                 </div>
-                <p className={`text-xs mt-1.5 font-medium ${isGood ? 'text-teal-500' : 'text-amber-500'}`}>
+                <p className={`text-xs mt-1.5 font-medium ${isGood ? 'text-primary' : 'text-tertiary'}`}>
                   {isGood ? 'Normal' : 'Di luar batas'}
                 </p>
               </div>
@@ -148,11 +148,11 @@ function AIDetailModal({ record, onClose }: { record: AIAnalysisRecord; onClose:
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-teal-100 rounded-xl flex items-center justify-center">
-              <BrainCircuit className="w-4.5 h-4.5 text-teal-600" />
+            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+              <BrainCircuit className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-gray-900">Detail Analisis AI</h3>
+              <h3 className="text-sm tracking-tighter text-gray-800">Detail Analisis AI</h3>
               <p className="text-xs text-gray-400">{record.created_at ? formatDate(record.created_at) : '—'}</p>
             </div>
           </div>
@@ -282,19 +282,19 @@ export default function HistoryPage() {
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-teal-100 rounded-xl flex items-center justify-center">
-          <History className="w-5 h-5 text-teal-600" />
+        <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center text-white shadow-xl shadow-primary/20">
+          <History className="w-6 h-6" />
         </div>
         <div>
-          <h2 className="text-lg font-bold text-gray-900">Riwayat Data</h2>
-          <p className="text-sm text-gray-400">Mode {activeMode === 'portable' ? 'Portable' : 'Panel'} — klik baris untuk detail</p>
+          <h2 className="text-lg font-bold text-gray-900 uppercase tracking-tighter">Riwayat Data</h2>
+          <p className="text-sm text-neutral-muted font-medium">Mode {activeMode === 'portable' ? 'Portable' : 'Panel'} — klik baris untuk detail</p>
         </div>
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
-          <div className="flex items-center gap-2 text-sm text-gray-500 shrink-0">
-            <Calendar className="w-4 h-4 text-teal-500" />
+          <div className="flex items-center gap-2 mb-5 text-[10px] font-black uppercase italic tracking-widest text-primary">
+            <Calendar className="w-3.5 h-3.5" />
             <span className="font-medium text-gray-700">Rentang Tanggal</span>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 flex-1">
@@ -305,7 +305,7 @@ export default function HistoryPage() {
                 value={startDate}
                 max={endDate}
                 onChange={e => setStartDate(e.target.value)}
-                className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-700 focus:outline-none focus:border-teal-400 transition-colors"
+                className="w-full bg-transparent border-2 border-black/5 rounded-xl p-3 text-xs font-bold text-gray-700 focus:outline-none focus:border-primary transition-all uppercase tracking-widest"
               />
             </div>
             <div className="flex items-center gap-2 flex-1">
@@ -316,7 +316,7 @@ export default function HistoryPage() {
                 min={startDate}
                 max={todayStr()}
                 onChange={e => setEndDate(e.target.value)}
-                className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-700 focus:outline-none focus:border-teal-400 transition-colors"
+                className="w-full bg-transparent border-2 border-black/5 rounded-xl p-3 text-xs font-bold text-gray-700 focus:outline-none focus:border-primary transition-all uppercase tracking-widest"
               />
             </div>
           </div>
@@ -330,7 +330,7 @@ export default function HistoryPage() {
                 Reset
               </button>
             )}
-            <div className="flex items-center gap-1.5 text-xs text-teal-600 bg-teal-50 px-3 py-2 rounded-xl">
+            <div className="flex items-center gap-1.5 text-xs text-primary bg-primary/10 px-3 py-2 rounded-xl">
               <Search className="w-3.5 h-3.5" />
               {loading ? 'Memuat...' : 'Hasil diperbarui'}
             </div>
@@ -344,25 +344,25 @@ export default function HistoryPage() {
           <button
             onClick={() => setTab('sensor')}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-              tab === 'sensor' ? 'bg-white text-teal-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              tab === 'sensor' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             <Thermometer className="w-4 h-4" />
             Data Sensor
             {tab === 'sensor' && !loading && (
-              <span className="bg-teal-100 text-teal-600 text-xs px-1.5 py-0.5 rounded-full">{sensorHistory.length}</span>
+              <span className="bg-primary/10 text-primary text-xs px-1.5 py-0.5 rounded-full">{sensorHistory.length}</span>
             )}
           </button>
           <button
             onClick={() => setTab('ai')}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-              tab === 'ai' ? 'bg-white text-teal-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              tab === 'ai' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             <BrainCircuit className="w-4 h-4" />
             Analisis AI
             {tab === 'ai' && !loading && (
-              <span className="bg-teal-100 text-teal-600 text-xs px-1.5 py-0.5 rounded-full">{aiHistory.length}</span>
+              <span className="bg-primary/10 text-primary text-xs px-1.5 py-0.5 rounded-full">{aiHistory.length}</span>
             )}
           </button>
         </div>
@@ -371,7 +371,7 @@ export default function HistoryPage() {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <div className="w-8 h-8 border-2 border-teal-200 border-t-teal-500 rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
           </div>
         ) : tab === 'sensor' ? (
           sensorHistory.length === 0 ? (
@@ -403,24 +403,24 @@ export default function HistoryPage() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.02 }}
                       onClick={() => setSelectedSensor(row)}
-                      className="border-b border-gray-50 hover:bg-teal-50/40 cursor-pointer transition-colors group"
+                      className="group hover:bg-primary/5 cursor-pointer transition-all duration-300"
                     >
-                      <td className="px-4 py-3 text-gray-500 whitespace-nowrap text-xs">{formatDate(row.created_at!)}</td>
-                      <td className="px-3 py-3 text-xs text-gray-600 font-medium capitalize">{row.land_id ?? 'default'}</td>
+                      <td className="px-6 py-4 text-[11px] font-mono text-gray-500 font-bold tracking-tight whitespace-nowrap">{formatDate(row.created_at!)}</td>
+                            <td className="px-3 py-4 text-[10px] font-black capitalize text-center text-primary/70">{row.land_id ?? 'default'}</td>
                       {SENSOR_CONFIGS.map(c => {
                         const val = row[c.key] as number;
                         const isGood = val >= c.goodMin && val <= c.goodMax;
                         return (
                           <td key={c.key} className="px-3 py-3 text-right">
-                            <span className={`font-medium ${isGood ? 'text-teal-600' : 'text-amber-600'}`}>
+                            <span className={`font-medium ${isGood ? 'text-primary' : 'text-tertiary'}`}>
                               {c.key === 'conductivity' ? val.toFixed(3) : c.key === 'ph' ? val.toFixed(2) : val.toFixed(1)}
                               <span className="text-gray-400 font-normal ml-0.5 text-xs">{c.unit}</span>
                             </span>
                           </td>
                         );
                       })}
-                      <td className="px-3 py-3 text-gray-300 group-hover:text-teal-400 transition-colors">
-                        <ChevronRight className="w-4 h-4" />
+                      <td className="px-6 text-gray-300 group-hover:text-primary transition-all">
+                        <ChevronRight className="w-4 h-4 translate-x-[-4px] group-hover:translate-x-0" />
                       </td>
                     </motion.tr>
                   ))}
@@ -447,7 +447,7 @@ export default function HistoryPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.03 }}
                     onClick={() => setSelectedAI(row)}
-                    className="flex items-center gap-4 px-5 py-4 hover:bg-teal-50/40 cursor-pointer transition-colors group"
+                    className="group flex items-center gap-6 px-8 py-6 hover:bg-primary/5 cursor-pointer transition-all border-l-4 border-transparent hover:border-primary"
                   >
                     <div className={`w-2 h-2 rounded-full shrink-0 ${sev.dot}`} />
                     <div className="flex-1 min-w-0">
@@ -467,7 +467,7 @@ export default function HistoryPage() {
                       <p className={`text-sm font-bold ${sev.color}`}>{row.confidence.toFixed(1)}%</p>
                       <p className="text-xs text-gray-400">kepercayaan</p>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-teal-400 transition-colors shrink-0" />
+                    <ChevronRight className="w-5 h-5 text-gray-200 group-hover:text-primary transition-all translate-x-[-10px] group-hover:translate-x-0" />
                   </motion.div>
                 );
               })}

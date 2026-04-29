@@ -46,12 +46,21 @@ export default function SensorGauge({ value, min, max, goodMin, goodMax, size = 
   const nx = cx + needleLength * Math.cos(needleRad);
   const ny = cy + needleLength * Math.sin(needleRad);
 
-  const fillColor = isGood ? '#38b2ac' : value < goodMin ? '#f59e0b' : '#ef4444';
-  const trackColor = '#e2e8f0';
+  /* REVISI: Mengubah konstanta warna fill
+     isGood -> Forest Green (#2E7D32)
+     Low (Under target) -> Soil Brown (#A05220)
+  */
+  const fillColor = isGood ? '#2E7D32' : value < goodMin ? '#A05220' : '#ef4444';
+  
+  /* REVISI: Mengubah trackColor agar tidak abu-abu kaku, menggunakan warna yang lebih "Warm/Beige" (#F1F1EF) */
+  const trackColor = '#F1F1EF';
 
   return (
     <svg width={size} height={size * 0.72} viewBox={`0 0 ${size} ${size * 0.72}`}>
+      {/* Lintasan Lingkaran */}
       <path d={trackPath} fill="none" stroke={trackColor} strokeWidth={strokeWidth} strokeLinecap="round" />
+      
+      {/* Jalur Progress Sensor */}
       {percentage > 0 && (
         <path
           d={fillPath}
@@ -62,6 +71,8 @@ export default function SensorGauge({ value, min, max, goodMin, goodMax, size = 
           style={{ transition: 'all 1s ease' }}
         />
       )}
+      
+      {/* REVISI: Mengubah Jarum indikator ke warna fill yang baru */}
       <line
         x1={cx}
         y1={cy}
@@ -72,16 +83,19 @@ export default function SensorGauge({ value, min, max, goodMin, goodMax, size = 
         strokeLinecap="round"
         style={{ transition: 'all 1s ease' }}
       />
+      
+      {/* Pusat Jarum */}
       <circle cx={cx} cy={cy} r={size * 0.04} fill={fillColor} style={{ transition: 'fill 1s ease' }} />
       <circle cx={cx} cy={cy} r={size * 0.025} fill="white" />
 
+      {/* REVISI: Indikator Rentang Optimal (Arc tipis) diubah menjadi warna Hijau Hutan #2E7D32 */}
       <path
         d={describeArc(startAngle + totalAngle * (goodMin - min) / (max - min), startAngle + totalAngle * (goodMax - min) / (max - min))}
         fill="none"
-        stroke="#38b2ac"
+        stroke="#2E7D32"
         strokeWidth={strokeWidth * 0.3}
         strokeLinecap="round"
-        opacity="0.25"
+        opacity="0.15"
       />
     </svg>
   );

@@ -1,6 +1,7 @@
 import React from 'react';
+import logo from '../../assets/logo-sigma.png'; 
 import { motion, AnimatePresence } from 'framer-motion';
-import { Leaf, LayoutDashboard, BrainCircuit, History, Settings, X, LogOut } from 'lucide-react';
+import { LayoutDashboard, BrainCircuit, History, Settings, X, LogOut } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { ActivePage } from '../../types';
@@ -25,12 +26,12 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-6 py-5 border-b border-white/10">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center">
-            <Leaf className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-white font-bold text-base tracking-wide leading-none">SIGMA</h1>
-            <p className="text-teal-200/70 text-xs mt-0.5">Smart Agriculture</p>
+          <div className="flex items-center gap-3">
+            <img src={logo} alt="SIGMA Logo" className="w-9 h-9 object-contain" />
+            <div>
+              <h1 className="text-white font-extrabold text-xl tracking-tighter leading-none">SIGMA</h1>
+              <p className="text-white/50 text-xs mt-0.5">Smart IoT for Growth Monitoring in Agriculture</p>
+            </div>
           </div>
         </div>
         {onClose && (
@@ -47,14 +48,14 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
             onClick={() => navigate(item.page)}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
               activePage === item.page
-                ? 'bg-white/20 text-white shadow-lg'
-                : 'text-white/60 hover:bg-white/10 hover:text-white'
+                ? 'bg-primary text-white shadow-lg'
+                : 'text-white/60 hover:bg-white/5 hover:text-white'
             }`}
           >
             {item.icon}
             {item.label}
             {activePage === item.page && (
-              <div className="ml-auto w-1.5 h-1.5 rounded-full bg-teal-300" />
+              <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white" />
             )}
           </button>
         ))}
@@ -62,8 +63,8 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
 
       <div className="px-3 py-4 border-t border-white/10">
         <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 mb-3">
-          <div className="w-8 h-8 bg-teal-400/30 rounded-full flex items-center justify-center shrink-0">
-            <span className="text-teal-200 text-xs font-bold">
+          <div className="w-8 h-8 bg-tertiary rounded-full flex items-center justify-center shrink-0">
+            <span className="text-white text-xs font-bold uppercase tracking-tighter">
               {user?.email?.[0]?.toUpperCase() ?? 'U'}
             </span>
           </div>
@@ -89,7 +90,7 @@ export default function Sidebar() {
 
   return (
     <>
-      <aside className="hidden lg:flex flex-col w-64 bg-gradient-to-b from-teal-700 to-teal-800 shadow-xl fixed left-0 top-0 h-full z-30">
+      <aside className="hidden lg:flex flex-col w-64 bg-[#14261D] shadow-xl fixed left-0 top-0 h-full z-30">
         <SidebarContent />
       </aside>
 
@@ -108,7 +109,7 @@ export default function Sidebar() {
               animate={{ x: 0 }}
               exit={{ x: -280 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed left-0 top-0 h-full w-72 bg-gradient-to-b from-teal-700 to-teal-800 shadow-2xl z-50 lg:hidden"
+              className="fixed left-0 top-0 h-full w-72 bg-[#14261D] shadow-2xl z-50 lg:hidden"
             >
               <SidebarContent onClose={() => setSidebarOpen(false)} />
             </motion.aside>

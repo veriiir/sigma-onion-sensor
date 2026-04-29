@@ -23,44 +23,52 @@ export default function UpdateTimer({ nextUpdateIn, lastUpdated }: UpdateTimerPr
   const progress = ((SYNC_INTERVAL - nextUpdateIn) / SYNC_INTERVAL) * 100;
 
   return (
-    <div className="bg-white rounded-2xl px-5 py-4 shadow-sm border border-gray-100 flex items-center gap-4">
+    /* REVISI: Border-gray-100 diubah ke black/5 agar lebih halus sesuai gaya Bento UI profesional */
+    <div className="bg-white rounded-[1.5rem] px-5 py-4 shadow-sm border border-black/[0.04] flex items-center gap-4 transition-all hover:shadow-md">
       <div className="flex items-center gap-2">
         <div className="relative flex items-center justify-center w-8 h-8">
-          <div className="w-2.5 h-2.5 bg-teal-500 rounded-full animate-pulse" />
-          <div className="absolute w-5 h-5 border-2 border-teal-200 rounded-full animate-ping opacity-40" />
+          {/* REVISI: Indicator Live diganti ke Hijau Hutan (primary) */}
+          <div className="w-2.5 h-2.5 bg-primary rounded-full animate-pulse" />
+          <div className="absolute w-5 h-5 border-2 border-primary rounded-full animate-ping opacity-20" />
         </div>
         <div>
-          <p className="text-xs text-gray-400 leading-none">Status</p>
-          <p className="text-sm font-semibold text-teal-600 mt-0.5">Live</p>
+          {/* REVISI: Label menggunakan uppercase, black, dan neutral-muted sesuai desain Vivid Earth */}
+          <p className="text-[10px] text-neutral-muted leading-none font-black uppercase italic tracking-widest opacity-50">Sistem Status</p>
+          <p className="text-sm font-black text-primary mt-0.5 uppercase italic">LIVE MODE</p>
         </div>
       </div>
 
-      <div className="w-px h-8 bg-gray-100" />
+      <div className="w-px h-8 bg-black/[0.05]" />
 
       <div className="flex items-center gap-2">
-        <Clock className="w-4 h-4 text-gray-400" />
+        {/* REVISI: Icon Clock mengikuti warna neutral-muted (abu-abu kehijauan) */}
+        <Clock className="w-4 h-4 text-neutral-muted" />
         <div>
-          <p className="text-xs text-gray-400 leading-none">Pembaruan berikutnya</p>
+          <p className="text-[10px] text-neutral-muted leading-none font-black uppercase italic tracking-widest opacity-50">Sync Schedule</p>
           <p className="text-sm font-bold text-gray-800 mt-0.5 font-mono">{formatTime(nextUpdateIn)}</p>
         </div>
       </div>
 
       <div className="flex-1 hidden sm:block">
-        <div className="flex justify-between text-xs text-gray-400 mb-1">
-          <span>Siklus pembaruan 6 jam</span>
-          <span>{Math.round(progress)}%</span>
+        <div className="flex justify-between text-[10px] font-black text-neutral-muted mb-2 uppercase italic tracking-widest opacity-40 px-1">
+          <span>6h Update Cycle</span>
+          <span>{Math.round(progress)}% Compleated</span>
         </div>
-        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+        <div className="h-1.5 bg-gray-50 rounded-full overflow-hidden border border-black/[0.03]">
           <div
-            className="h-full bg-teal-500 rounded-full transition-all duration-1000"
+            /* REVISI: Bar pembaruan diganti warnanya ke Secondary (Biru Langit #0288D1) agar terlihat berbeda dengan indikator Status yang sudah Hijau */
+            className="h-full bg-secondary rounded-full transition-all duration-1000 shadow-sm"
             style={{ width: `${progress}%` }}
           />
         </div>
       </div>
 
-      <div className="flex items-center gap-2 text-gray-400 shrink-0">
-        <RefreshCw className="w-3.5 h-3.5" />
-        <span className="text-xs hidden md:inline">Terakhir: {formatDate(lastUpdated)}</span>
+      <div className="flex items-center gap-3 text-neutral-muted shrink-0 pl-2">
+        <RefreshCw className="w-3.5 h-3.5 opacity-60" />
+        <div className="text-right">
+          <p className="text-[9px] font-black uppercase opacity-40 italic tracking-widest leading-none">Last Log</p>
+          <span className="text-xs font-bold text-gray-500 italic">{formatDate(lastUpdated)}</span>
+        </div>
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import logo from '../assets/logo-sigma.png'; 
 import { Leaf, Eye, EyeOff, Smartphone, MonitorSpeaker, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { SystemType } from '../types';
@@ -62,12 +63,12 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-teal-900 via-teal-800 to-emerald-900" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#1B3022] via-[#14261D] to-[#0A1610]" />
       <div className="absolute inset-0 opacity-20">
         {Array.from({ length: 20 }).map((_, i) => (
           <div
             key={i}
-            className="absolute rounded-full bg-teal-400"
+            className="absolute rounded-full bg-primary"
             style={{
               width: Math.random() * 200 + 50,
               height: Math.random() * 200 + 50,
@@ -87,21 +88,21 @@ export default function AuthPage() {
         transition={{ duration: 0.5, ease: 'easeOut' }}
         className="relative z-10 w-full max-w-md"
       >
-        <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl shadow-2xl overflow-hidden">
-          <div className="p-8">
+        <div className="backdrop-blur-2xl bg-white/5 border border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden">
+          <div className="p-10">
             <div className="flex flex-col items-center mb-8">
-              <div className="w-16 h-16 bg-teal-400/20 border-2 border-teal-400/50 rounded-2xl flex items-center justify-center mb-4">
-                <Leaf className="w-8 h-8 text-teal-300" />
+              <div className="w-20 h-20 bg-white/5 border-2 border-primary/20 rounded-3xl flex items-center justify-center mb-5 shadow-2xl shadow-black/20">
+                <img src={logo} alt="SIGMA" className="w-10 h-10 object-contain drop-shadow-md" />
               </div>
-              <h1 className="text-2xl font-bold text-white tracking-wide">SIGMA</h1>
-              <p className="text-teal-200/80 text-sm mt-1 text-center">Smart IoT for Growth Monitoring in Agriculture</p>
+              <h1 className="text-3xl font-black text-white tracking-tighter uppercase">SIGMA</h1>
+              <p className="text-white/80 text-sm mt-1 text-center">Smart IoT for Growth Monitoring in Agriculture</p>
             </div>
 
             <div className="flex bg-white/10 rounded-xl p-1 mb-6">
               <button
                 onClick={() => { setMode('login'); setError(''); setSuccess(''); }}
                 className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  mode === 'login' ? 'bg-teal-500 text-white shadow-lg' : 'text-white/70 hover:text-white'
+                  mode === 'login' ? 'bg-primary text-white shadow-xl shadow-primary/20 scale-[1.02]' : 'text-white/30 hover:text-white'
                 }`}
               >
                 Masuk
@@ -109,7 +110,7 @@ export default function AuthPage() {
               <button
                 onClick={() => { setMode('register'); setError(''); setSuccess(''); }}
                 className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  mode === 'register' ? 'bg-teal-500 text-white shadow-lg' : 'text-white/70 hover:text-white'
+                  mode === 'register' ? 'bg-primary text-white shadow-xl' : 'text-white/70 hover:text-white'
                 }`}
               >
                 Daftar
@@ -122,10 +123,10 @@ export default function AuthPage() {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="flex items-center gap-2 bg-red-500/20 border border-red-400/40 rounded-xl px-4 py-3 mb-4"
+                  className="flex items-center gap-3 bg-red-500/10 border border-red-500/20 rounded-2xl px-5 py-4 mb-6 shadow-lg shadow-red-500/5"
                 >
-                  <AlertCircle className="w-4 h-4 text-red-300 shrink-0" />
-                  <p className="text-red-200 text-sm">{error}</p>
+                  <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                  <p className="text-red-100 text-[11px] font-black uppercase italic leading-none">{error}</p>
                 </motion.div>
               )}
               {success && (
@@ -133,10 +134,10 @@ export default function AuthPage() {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="flex items-center gap-2 bg-green-500/20 border border-green-400/40 rounded-xl px-4 py-3 mb-4"
+                  className="flex items-center gap-3 bg-primary/10 border border-primary/20 rounded-2xl px-5 py-4 mb-6 shadow-lg shadow-primary/5"
                 >
-                  <CheckCircle className="w-4 h-4 text-green-300 shrink-0" />
-                  <p className="text-green-200 text-sm">{success}</p>
+                  <CheckCircle className="w-4 h-4 text-primary shrink-0" />
+                  <p className="text-primary-light text-[11px] font-black uppercase italic leading-none">{success}</p>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -159,7 +160,7 @@ export default function AuthPage() {
                       value={fullName}
                       onChange={e => setFullName(e.target.value)}
                       placeholder="Masukkan nama lengkap"
-                      className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-teal-400/60 focus:bg-white/15 transition-all text-sm"
+                      className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:outline-none focus:border-primary/50 focus:bg-white/15 transition-all text-sm"
                     />
                   </div>
                 )}
@@ -226,8 +227,8 @@ export default function AuthPage() {
                         onClick={() => setSystemType('portable')}
                         className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all duration-200 ${
                           systemType === 'portable'
-                            ? 'bg-teal-500/30 border-teal-400/60 text-white'
-                            : 'bg-white/5 border-white/15 text-white/50 hover:bg-white/10'
+                            ? 'bg-primary border-primary text-white'
+                            : 'bg-white/5 border-white/5 text-white/50 hover:bg-white/10'
                         }`}
                       >
                         <Smartphone className="w-6 h-6" />
@@ -241,7 +242,7 @@ export default function AuthPage() {
                         onClick={() => setSystemType('panel')}
                         className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all duration-200 ${
                           systemType === 'panel'
-                            ? 'bg-teal-500/30 border-teal-400/60 text-white'
+                            ? 'bg-primary border-primary text-white'
                             : 'bg-white/5 border-white/15 text-white/50 hover:bg-white/10'
                         }`}
                       >
@@ -258,12 +259,12 @@ export default function AuthPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-teal-500 hover:bg-teal-400 disabled:bg-teal-600/50 text-white font-semibold py-3.5 rounded-xl transition-all duration-200 text-sm shadow-lg shadow-teal-500/25 mt-2 flex items-center justify-center gap-2"
+                  className="w-full bg-primary hover:opacity-90 disabled:bg-primary/40 text-white font-semibold py-3.5 rounded-xl transition-all duration-200 text-sm shadow-lg shadow-primary/30 mt-2 flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   ) : (
-                    mode === 'login' ? 'Masuk ke SIGMA' : 'Buat Akun'
+                    mode === 'login' ? 'Masuk' : 'Buat Akun'
                   )}
                 </button>
               </motion.form>
@@ -271,7 +272,7 @@ export default function AuthPage() {
           </div>
 
           <div className="px-8 pb-6 text-center">
-            <p className="text-white/40 text-xs">© 2025 SIGMA — Smart Agriculture Platform</p>
+            <p className="text-white/40 text-xs">© 2026 — SIGMA PLATFORM</p>
           </div>
         </div>
       </motion.div>
