@@ -81,5 +81,4 @@ export const DISEASES = [
   { label: 'Sehat', confidence: 96.1 },
 ];
 
-export const DUMMY_IMAGE_URL =
-  'https://source.roboflow.com/Nc9FBsCKYFQIzcfXD9UbiqTsUQ33/CsJFEYXaFfqpkh3GmxHn/original.jpg';
+export const DUMMY_IMAGE_URL = '';

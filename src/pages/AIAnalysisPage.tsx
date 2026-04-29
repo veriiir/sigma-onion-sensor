@@ -456,13 +456,20 @@ export default function AIAnalysisPage() {
               <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
 
               <div className="relative bg-gray-900 aspect-video overflow-hidden">
-                <img
-                  ref={imgRef}
-                  src={capturedImageUrl ?? 'https://images.pexels.com/photos/2286776/pexels-photo-2286776.jpeg?auto=compress&cs=tinysrgb&w=800'}
-                  alt="Tangkapan kamera lapangan"
-                  onLoad={() => setImgLoaded(true)}
-                  className="w-full h-full object-cover"
-                />
+                {capturedImageUrl ? (
+                  <img
+                    ref={imgRef}
+                    src={capturedImageUrl}
+                    alt="Tangkapan kamera lapangan"
+                    onLoad={() => setImgLoaded(true)}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-3 bg-gray-800">
+                    <Scan className="w-10 h-10 text-gray-600" />
+                    <p className="text-gray-500 text-sm">Belum ada gambar</p>
+                  </div>
+                )}
 
                 {analyzing && (
                   <div className="absolute inset-0 bg-[#14261D]/80 flex flex-col items-center justify-center gap-6">
