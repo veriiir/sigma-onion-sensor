@@ -1,19 +1,120 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Smartphone, MonitorSpeaker, Thermometer, Droplets, Zap, FlaskConical, LayoutGrid } from 'lucide-react';
+import {
+  Smartphone, MonitorSpeaker, Thermometer, Droplets, Zap, FlaskConical,
+  BrainCircuit, Camera, AlertTriangle, ShieldAlert, CheckCircle, Clock, MapPin,
+} from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
+import { useAuth } from '../contexts/AuthContext';
 import { useSensorData } from '../hooks/useSensorData';
 import SensorCard from '../components/dashboard/SensorCard';
 import UpdateTimer from '../components/dashboard/UpdateTimer';
 import LandSelector from '../components/dashboard/LandSelector';
-import AIAnalysisSummary from '../components/dashboard/AIAnalysisSummary';
 import { SENSOR_CONFIGS } from '../constants/sensors';
-import { SensorReading, Land } from '../types';
+import { SensorReading, Land, AIAnalysisRecord, SystemType, LandId } from '../types';
+import { supabase } from '../lib/supabase';
 
 const INITIAL_LANDS: Land[] = [
   { id: 'lahan1', label: 'Lahan 1', area: '0.5 Ha', crop: 'Bawang Merah', system_type: 'panel', user_id: '' },
   { id: 'lahan2', label: 'Lahan 2', area: '0.8 Ha', crop: 'Bawang Putih', system_type: 'panel', user_id: '' },
 ];
+
+const DISEASE_SEVERITY: Record<string, 'high' | 'medium' | 'none'> = {
+  'Alternaria Porri': 'high',
+  'Botrytis Leaf Blight': 'high',
+  'Purple Blotch': 'medium',
+  'Stemphylium Leaf Blight': 'medium',
+  'Sehat': 'none',
+};
+
+const severityCfg = {
+  high: { label: 'Risiko Tinggi', color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200', dot: 'bg-red-500', icon: <AlertTriangle className="w-3.5 h-3.5" /> },
+  medium: { label: 'Risiko Sedang', color: 'text-tertiary', bg: 'bg-tertiary/10', border: 'border-tertiary/20', dot: 'bg-amber-400', icon: <ShieldAlert className="w-3.5 h-3.5" /> },
+  none: { label: 'Sehat', color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/20', dot: 'bg-primary', icon: <CheckCircle className="w-3.5 h-3.5" /> },
+};
+
+function timeAgo(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Baru saja';
+  if (mins < 60) return `${mins} mnt lalu`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs} jam lalu`;
+  return `${Math.floor(hrs / 24)} hari lalu`;
+}
+
+function useLatestAI(systemType: SystemType, landId: LandId) {
+  const { user } = useAuth();
+  const [latest, setLatest] = useState<AIAnalysisRecord | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('ai_analysis')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('system_type', systemType)
+      .eq('land_id', landId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => setLatest(data));
+  }, [user, systemType, landId]);
+
+  return latest;
+}
+
+function AIStatusBanner({ systemType, landId }: { systemType: SystemType; landId: LandId }) {
+  const { setActivePage } = useApp();
+  const latest = useLatestAI(systemType, landId);
+  const severity = latest ? (DISEASE_SEVERITY[latest.disease_name] ?? 'none') : null;
+  const sev = severity ? severityCfg[severity] : null;
+
+  return (
+    <div className={`rounded-2xl border px-4 py-3 flex items-center gap-3 ${sev ? `${sev.border} ${sev.bg}` : 'border-black/5 bg-white'}`}>
+      {sev ? (
+        <>
+          <div className={`w-2 h-2 rounded-full shrink-0 ${sev.dot}`} />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className={`text-xs font-bold ${sev.color}`}>{latest!.disease_name}</p>
+              <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${sev.bg} ${sev.color} border ${sev.border}`}>
+                {sev.label}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+              <span className="flex items-center gap-1 text-xs text-gray-400">
+                <Clock className="w-3 h-3 shrink-0" />
+                {latest!.created_at ? timeAgo(latest!.created_at) : '—'}
+              </span>
+              {latest!.confidence != null && (
+                <span className="text-xs text-gray-400">{latest!.confidence.toFixed(0)}% kepercayaan</span>
+              )}
+              {latest!.latitude != null && (
+                <span className="flex items-center gap-0.5 text-xs text-teal-500">
+                  <MapPin className="w-3 h-3 shrink-0" />
+                  {latest!.latitude.toFixed(4)}, {latest!.longitude!.toFixed(4)}
+                </span>
+              )}
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          <BrainCircuit className="w-4 h-4 text-gray-300 shrink-0" />
+          <p className="text-xs text-gray-400 flex-1">Belum ada analisis penyakit untuk lahan ini</p>
+        </>
+      )}
+      <button
+        onClick={() => setActivePage('ai-analysis')}
+        className="flex items-center gap-1.5 text-xs font-semibold text-white bg-primary hover:bg-primary/90 px-3 py-1.5 rounded-xl transition-colors shrink-0 shadow-sm shadow-primary/20"
+      >
+        <Camera className="w-3.5 h-3.5" />
+        Analisis Foto
+      </button>
+    </div>
+  );
+}
 
 function StatBadge({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: string; color: string }) {
   return (
@@ -42,7 +143,6 @@ function PortableDashboard() {
     if (saved) setLands(JSON.parse(saved));
   }, [selectedLand]);
 
-  // FIX: Mengambil label untuk ditampilkan di Header Data Sensor
   const currentLandName = lands.find(l => l.id === selectedLand)?.label || 'Titik Lapangan';
 
   const healthyCount = SENSOR_CONFIGS.filter(c => {
@@ -67,9 +167,8 @@ function PortableDashboard() {
 
       <UpdateTimer nextUpdateIn={nextUpdateIn} lastUpdated={lastUpdated} />
 
-      {/* ANIMASI TRANSISI SAAT GANTI LOKASI */}
-      <motion.div 
-        key={selectedLand} 
+      <motion.div
+        key={selectedLand}
         initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4 }}
         className="space-y-6"
       >
@@ -85,7 +184,7 @@ function PortableDashboard() {
             <h3 className="text-base font-black text-gray-800 tracking-tighter uppercase leading-none">
               Data Sensor <span className="text-primary">{currentLandName}</span>
             </h3>
-            <span className="text-[10px] font-black text-neutral-muted bg-gray-50 border px-3 py-1 rounded-full uppercase italic font-black">7 Parameter Detect</span>
+            <span className="text-[10px] font-black text-neutral-muted bg-gray-50 border px-3 py-1 rounded-full uppercase italic">7 Parameter Detect</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {SENSOR_CONFIGS.map((config, i) => (
@@ -94,7 +193,7 @@ function PortableDashboard() {
           </div>
         </div>
 
-        <AIAnalysisSummary systemType={activeMode} landId={selectedLand} />
+        <AIStatusBanner systemType={activeMode} landId={selectedLand} />
       </motion.div>
     </div>
   );
@@ -113,7 +212,6 @@ function PanelDashboard() {
     if (saved) setLands(JSON.parse(saved));
   }, [selectedLand]);
 
-  // FIX: Mengambil label lahan, bukan ID (selectedLand)
   const currentLand = lands.find(l => l.id === selectedLand) || lands[0];
 
   const healthyCount = SENSOR_CONFIGS.filter(c => {
@@ -138,9 +236,8 @@ function PanelDashboard() {
 
       <UpdateTimer nextUpdateIn={nextUpdateIn} lastUpdated={lastUpdated} />
 
-      {/* FIX: Tambahkan Animasi transisi saat ganti lahan di Panel juga */}
-      <motion.div 
-        key={selectedLand} 
+      <motion.div
+        key={selectedLand}
         initial={{ opacity: 0, scale: 0.99 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4 }}
         className="space-y-6"
       >
@@ -153,11 +250,10 @@ function PanelDashboard() {
 
         <div>
           <div className="flex items-center justify-between mb-4 border-b border-black/5 pb-2">
-            {/* FIX: Sekarang menampilkan currentLand.label (Bukan ID Teknis) */}
             <h3 className="text-base font-black text-gray-800 tracking-tighter uppercase leading-none">
-              Data Sensor  <span className="text-primary">{currentLand.label}</span>
+              Data Sensor <span className="text-primary">{currentLand.label}</span>
             </h3>
-            <span className="text-[10px] font-black text-neutral-muted bg-gray-50 border px-3 py-1 rounded-full uppercase italic font-black">7 Parameter Detect</span>
+            <span className="text-[10px] font-black text-neutral-muted bg-gray-50 border px-3 py-1 rounded-full uppercase italic">7 Parameter Detect</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {SENSOR_CONFIGS.map((config, i) => (
@@ -166,7 +262,7 @@ function PanelDashboard() {
           </div>
         </div>
 
-        <AIAnalysisSummary systemType={activeMode} landId={selectedLand} />
+        <AIStatusBanner systemType={activeMode} landId={selectedLand} />
       </motion.div>
     </div>
   );
