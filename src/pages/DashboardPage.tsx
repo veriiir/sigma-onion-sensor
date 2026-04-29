@@ -6,6 +6,7 @@ import { useSensorData } from '../hooks/useSensorData';
 import SensorCard from '../components/dashboard/SensorCard';
 import UpdateTimer from '../components/dashboard/UpdateTimer';
 import LandSelector from '../components/dashboard/LandSelector';
+import AIAnalysisSummary from '../components/dashboard/AIAnalysisSummary';
 import { SENSOR_CONFIGS } from '../constants/sensors';
 import { SensorReading, Land } from '../types';
 
@@ -92,6 +93,8 @@ function PortableDashboard() {
             ))}
           </div>
         </div>
+
+        <AIAnalysisSummary systemType={activeMode} landId={selectedLand} />
       </motion.div>
     </div>
   );
@@ -162,6 +165,8 @@ function PanelDashboard() {
             ))}
           </div>
         </div>
+
+        <AIAnalysisSummary systemType={activeMode} landId={selectedLand} />
       </motion.div>
     </div>
   );

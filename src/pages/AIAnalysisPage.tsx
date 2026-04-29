@@ -3,14 +3,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   BrainCircuit, Play, Save, CheckCircle, AlertTriangle, ShieldAlert,
   Scan, Info, Camera, Upload, MapPin, Loader2, MapPinOff, ChevronDown,
+  ShieldCheck, ShieldX, Navigation,
 } from 'lucide-react';
 import exifr from 'exifr';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useAIDetection } from '../hooks/useAIDetection';
 import { useNotification } from '../contexts/NotificationContext';
+import { useLands, validateLandCoords } from '../hooks/useLands';
 import { supabase } from '../lib/supabase';
-import { AIAnalysisRecord } from '../types';
+import { AIAnalysisRecord, Land, LandValidationResult } from '../types';
 import LandSelector from '../components/dashboard/LandSelector';
 
 const DISEASE_DATA: Record<string, { severity: 'high' | 'medium' | 'none'; recommendation: string }> = {
@@ -57,6 +59,7 @@ interface LocationState {
   timestamp?: string;
   loading: boolean;
   error: string | null;
+  validation: LandValidationResult | null;
 }
 
 function formatCoord(val: number | null, dir: 'lat' | 'lon') {
@@ -71,6 +74,7 @@ export default function AIAnalysisPage() {
   const { user } = useAuth();
   const { push } = useNotification();
   const { detection, analyzing, lastAnalyzed, runDetection } = useAIDetection(activeMode, selectedLand);
+  const { lands } = useLands(activeMode);
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -85,6 +89,7 @@ export default function AIAnalysisPage() {
     source: null,
     loading: false,
     error: null,
+    validation: null,
   });
 
   const imgRef = useRef<HTMLImageElement>(null);
@@ -132,31 +137,54 @@ export default function AIAnalysisPage() {
 
     setLocation(s => ({ ...s, loading: true, error: null }));
 
+    let coords: { latitude: number; longitude: number } | null = null;
+    let source: LocationSource = null;
+    let timestamp: string | undefined;
+    let error: string | null = null;
+
     if (mode === 'camera') {
-      const coords = await captureGPS();
+      coords = await captureGPS();
       if (coords) {
-        setLocation({ latitude: coords.latitude, longitude: coords.longitude, source: 'gps', loading: false, error: null });
+        source = 'gps';
       } else {
-        setLocation({ latitude: null, longitude: null, source: null, loading: false, error: 'GPS tidak tersedia. Pilih lahan secara manual.' });
+        error = 'GPS tidak tersedia. Pilih lahan secara manual.';
       }
     } else {
       try {
         const exifData = await exifr.gps(file);
         if (exifData?.latitude != null && exifData?.longitude != null) {
-          let timestamp: string | undefined;
+          coords = { latitude: exifData.latitude, longitude: exifData.longitude };
+          source = 'exif';
           try {
             const full = await exifr.parse(file, ['DateTimeOriginal']);
             if (full?.DateTimeOriginal) timestamp = new Date(full.DateTimeOriginal).toLocaleString('id-ID');
           } catch { /* timestamp not critical */ }
-
-          setLocation({ latitude: exifData.latitude, longitude: exifData.longitude, source: 'exif', timestamp, loading: false, error: null });
         } else {
-          setLocation({ latitude: null, longitude: null, source: null, loading: false, error: 'Metadata GPS tidak ditemukan dalam foto. Pilih lahan secara manual.' });
+          error = 'Metadata GPS tidak ditemukan dalam foto. Pilih lahan secara manual.';
         }
       } catch {
-        setLocation({ latitude: null, longitude: null, source: null, loading: false, error: 'Gagal membaca EXIF foto. Pilih lahan secara manual.' });
+        error = 'Gagal membaca EXIF foto. Pilih lahan secara manual.';
       }
     }
+
+    let validation: LandValidationResult | null = null;
+    if (coords) {
+      validation = validateLandCoords(coords.latitude, coords.longitude, lands);
+      // Auto-pilih lahan terdekat jika cocok
+      if (validation.matched && validation.land) {
+        setSelectedLand(validation.land.id);
+      }
+    }
+
+    setLocation({
+      latitude: coords?.latitude ?? null,
+      longitude: coords?.longitude ?? null,
+      source,
+      timestamp,
+      loading: false,
+      error,
+      validation,
+    });
 
     await runDetection();
   }
@@ -211,7 +239,7 @@ export default function AIAnalysisPage() {
     setSaved(false);
     setImgLoaded(false);
     setCapturedImageUrl(prev => { if (prev) URL.revokeObjectURL(prev); return null; });
-    setLocation({ latitude: null, longitude: null, source: null, loading: false, error: null });
+    setLocation({ latitude: null, longitude: null, source: null, loading: false, error: null, validation: null });
     await runDetection();
   }
 
@@ -377,6 +405,7 @@ export default function AIAnalysisPage() {
               captureMode={captureMode}
               manualLand={manualLand}
               onManualLandChange={setManualLand}
+              lands={lands}
             />
 
             {!analyzing && detection && (
@@ -487,13 +516,17 @@ function LocationCard({
   captureMode,
   manualLand,
   onManualLandChange,
+  lands,
 }: {
   location: LocationState;
   captureMode: 'camera' | 'upload' | null;
   manualLand: string;
   onManualLandChange: (v: string) => void;
+  lands: Land[];
 }) {
   const hasLocation = location.latitude !== null && location.longitude !== null;
+  const val = location.validation;
+  const landsWithCoords = lands.filter(l => l.latitude != null && l.longitude != null);
 
   if (location.loading) {
     return (
@@ -511,34 +544,79 @@ function LocationCard({
       <motion.div
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-secondary/5 rounded-[2rem] border-2 border-dashed border-secondary/10 px-8 py-6 shadow-sm shadow-secondary/5"
+        className="bg-secondary/5 rounded-[2rem] border-2 border-dashed border-secondary/10 px-8 py-6 shadow-sm shadow-secondary/5 space-y-4"
       >
+        {/* Koordinat header */}
         <div className="flex items-start gap-4">
           <div className="w-11 h-11 bg-secondary rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-secondary/20">
             <MapPin className="w-6 h-6 text-white" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <p className="text-sm font-semibold text-teal-700">Lokasi Terverifikasi</p>
+              <p className="text-sm font-semibold text-teal-700">Lokasi Terdeteksi</p>
               <span className="text-xs bg-teal-100 text-secondary px-2 py-0.5 rounded-full font-medium uppercase tracking-wide">
                 {location.source === 'gps' ? 'GPS Real-time' : 'EXIF Foto'}
               </span>
             </div>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2">
               <div>
-                <p className="text-xs text-secondary">Latitude</p>
+                <p className="text-xs text-secondary/70">Latitude</p>
                 <p className="text-sm font-mono font-medium text-secondary">{formatCoord(location.latitude, 'lat')}</p>
               </div>
               <div>
-                <p className="text-xs text-secondary">Longitude</p>
+                <p className="text-xs text-secondary/70">Longitude</p>
                 <p className="text-sm font-mono font-medium text-secondary/80">{formatCoord(location.longitude, 'lon')}</p>
               </div>
             </div>
             {location.timestamp && (
-              <p className="text-xs text-secondary mt-1.5">Waktu Foto: {location.timestamp}</p>
+              <p className="text-xs text-secondary/70 mt-1.5">
+                Waktu Foto: {location.timestamp}
+              </p>
             )}
           </div>
         </div>
+
+        {/* Validasi lahan */}
+        {landsWithCoords.length > 0 && val && (
+          <div className={`rounded-2xl border px-4 py-3.5 ${val.withinRadius ? 'bg-teal-50 border-teal-200' : 'bg-red-50 border-red-200'}`}>
+            <div className="flex items-start gap-3">
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${val.withinRadius ? 'bg-teal-500' : 'bg-red-500'}`}>
+                {val.withinRadius
+                  ? <ShieldCheck className="w-4 h-4 text-white" />
+                  : <ShieldX className="w-4 h-4 text-white" />
+                }
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className={`text-sm font-semibold ${val.withinRadius ? 'text-teal-700' : 'text-red-700'}`}>
+                  {val.withinRadius ? 'Lokasi Valid — Cocok dengan Lahan' : 'Lokasi di Luar Batas Lahan'}
+                </p>
+                {val.land && (
+                  <p className={`text-xs mt-0.5 ${val.withinRadius ? 'text-teal-600' : 'text-red-600'}`}>
+                    Lahan terdekat: <span className="font-semibold">{val.land.label}</span>
+                    {val.distanceM != null && (
+                      <span className="ml-1 opacity-70">({val.distanceM < 1000 ? `${val.distanceM} m` : `${(val.distanceM / 1000).toFixed(1)} km`})</span>
+                    )}
+                  </p>
+                )}
+                {!val.withinRadius && val.land && (
+                  <p className="text-xs text-red-500 mt-1">
+                    Melebihi radius toleransi {val.land.radius_m ?? 500} m. Pastikan foto diambil di lokasi yang benar.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Jika lands belum ada koordinat, tampilkan info */}
+        {landsWithCoords.length === 0 && (
+          <div className="flex items-center gap-2.5 bg-white/70 rounded-xl border border-teal-100 px-4 py-3">
+            <Navigation className="w-4 h-4 text-secondary shrink-0" />
+            <p className="text-xs text-secondary/70">
+              Atur koordinat lahan di Pengaturan untuk mengaktifkan validasi otomatis.
+            </p>
+          </div>
+        )}
       </motion.div>
     );
   }

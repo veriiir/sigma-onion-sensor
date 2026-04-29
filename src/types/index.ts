@@ -82,11 +82,19 @@ export interface Land {
   user_id: string;
   label: string;
   crop: string;
-  area?: string; // Opsional untuk portable
-  latitude?: number; // Untuk Portable
-  longitude?: number; // Untuk Portable
+  area?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  radius_m?: number;
   system_type: SystemType;
   created_at?: string;
+}
+
+export interface LandValidationResult {
+  matched: boolean;
+  land: Land | null;
+  distanceM: number | null;
+  withinRadius: boolean;
 }
 
 export type ActivePage = 'dashboard' | 'ai-analysis' | 'history' | 'settings';
