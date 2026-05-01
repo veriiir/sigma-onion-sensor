@@ -130,6 +130,21 @@ function StatBadge({ icon, label, value, color }: { icon: React.ReactNode; label
   );
 }
 
+function GreetingBanner() {
+  const { user, profile } = useAuth();
+
+  const hour = new Date().getHours();
+  const greeting = hour < 11 ? 'Selamat Pagi' : hour < 15 ? 'Selamat Siang' : hour < 19 ? 'Selamat Sore' : 'Selamat Malam';
+  const name = profile?.full_name?.trim() || 'Petani';
+
+  return (
+    <div className="px-1">
+      <p className="text-2xl md:text-3xl font-black tracking-tight text-primary">{greeting}, {name}!</p>
+      <p className="text-sm text-neutral-muted mt-1">Pantau kondisi lahan hari ini dan lakukan tindakan lebih cepat.</p>
+    </div>
+  );
+}
+
 function PortableDashboard() {
   const { activeMode, selectedLand, setSelectedLand } = useApp();
   const { sensorData, nextUpdateIn, lastUpdated } = useSensorData(activeMode, selectedLand);
@@ -143,7 +158,14 @@ function PortableDashboard() {
     if (saved) setLands(JSON.parse(saved));
   }, [selectedLand]);
 
-  const currentLandName = lands.find(l => l.id === selectedLand)?.label || 'Titik Lapangan';
+  useEffect(() => {
+    const portableLands = lands.filter(l => l.system_type === 'portable');
+    if (!portableLands.length) return;
+    const exists = portableLands.some(l => l.id === selectedLand);
+    if (!exists) setSelectedLand(portableLands[0].id);
+  }, [lands, selectedLand, setSelectedLand]);
+
+  const currentLandName = lands.find(l => l.id === selectedLand)?.label || 'Lokasi Portable';
 
   const healthyCount = SENSOR_CONFIGS.filter(c => {
     const val = sensorData[c.key] as number;
@@ -152,6 +174,7 @@ function PortableDashboard() {
 
   return (
     <div className="space-y-5">
+      <GreetingBanner />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
@@ -212,7 +235,14 @@ function PanelDashboard() {
     if (saved) setLands(JSON.parse(saved));
   }, [selectedLand]);
 
-  const currentLand = lands.find(l => l.id === selectedLand) || lands[0];
+  useEffect(() => {
+    const panelLands = lands.filter(l => l.system_type === 'panel');
+    if (!panelLands.length) return;
+    const exists = panelLands.some(l => l.id === selectedLand);
+    if (!exists) setSelectedLand(panelLands[0].id);
+  }, [lands, selectedLand, setSelectedLand]);
+
+  const currentLand = lands.find(l => l.id === selectedLand) || lands.find(l => l.system_type === 'panel') || lands[0];
 
   const healthyCount = SENSOR_CONFIGS.filter(c => {
     const val = sensorData[c.key] as number;
@@ -221,6 +251,7 @@ function PanelDashboard() {
 
   return (
     <div className="space-y-5">
+      <GreetingBanner />
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         <div className="flex items-center gap-3 flex-1">
           <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center shadow-inner">

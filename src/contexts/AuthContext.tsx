@@ -64,7 +64,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function signUp(email: string, password: string, fullName: string, systemType: SystemType) {
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+        },
+      },
+    });
     if (error) return { error: error.message };
 
     if (data.user && (!data.user.identities || data.user.identities.length === 0)) {
@@ -72,11 +80,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (data.user) {
-      const { error: profileError } = await supabase.from('profiles').insert({
+      const { error: profileError } = await supabase.from('profiles').upsert({
         id: data.user.id,
         full_name: fullName,
         system_type: systemType,
-      });
+      }, { onConflict: 'id' });
 
       if (profileError && !profileError.message.toLowerCase().includes('duplicate key')) {
         return { error: 'Gagal menyiapkan profil pengguna. Silakan coba lagi.' };
