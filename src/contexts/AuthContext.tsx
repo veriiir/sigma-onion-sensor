@@ -10,6 +10,7 @@ interface AuthContextType {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, fullName: string, systemType: SystemType) => Promise<{ error: string | null }>;
+  resetPassword: (email: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<void>;
 }
@@ -65,13 +66,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function signUp(email: string, password: string, fullName: string, systemType: SystemType) {
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) return { error: error.message };
+
+    if (data.user && (!data.user.identities || data.user.identities.length === 0)) {
+      return { error: 'Email ini sudah terdaftar. Silakan masuk.' };
+    }
+
     if (data.user) {
-      await supabase.from('profiles').insert({
+      const { error: profileError } = await supabase.from('profiles').insert({
         id: data.user.id,
         full_name: fullName,
         system_type: systemType,
       });
+
+      if (profileError && !profileError.message.toLowerCase().includes('duplicate key')) {
+        return { error: 'Gagal menyiapkan profil pengguna. Silakan coba lagi.' };
+      }
     }
+
+    return { error: null };
+  }
+
+  async function resetPassword(email: string) {
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    if (error) return { error: error.message };
     return { error: null };
   }
 
@@ -91,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, signIn, signUp, signOut, updateProfile }}>
+    <AuthContext.Provider value={{ user, session, profile, loading, signIn, signUp, resetPassword, signOut, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

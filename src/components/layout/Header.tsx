@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Menu, ChevronRight, Bell, Smartphone, MonitorSpeaker, ChevronDown, LogOut, User, Settings } from 'lucide-react';
+import { Menu, ChevronRight, Bell, ChevronDown, LogOut, User, Settings } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
-import { ActivePage, SystemType } from '../../types';
+import { ActivePage } from '../../types';
 
 const pageLabels: Record<ActivePage, string> = {
   'dashboard': 'Dasbor',
@@ -13,7 +13,7 @@ const pageLabels: Record<ActivePage, string> = {
 };
 
 export default function Header() {
-  const { activePage, activeMode, setActiveMode, setSidebarOpen, setActivePage } = useApp();
+  const { activePage, setSidebarOpen, setActivePage } = useApp();
   const { user, signOut } = useAuth();
   const { notifications } = useNotification();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -49,34 +49,6 @@ export default function Header() {
       </div>
 
       <div className="flex items-center gap-3">
-        {/* REVISI: Background switcher dari abu kaku ke black/5 agar lebih "Organic" */ }
-        <div className="flex items-center bg-black/5 rounded-xl p-1 gap-1">
-          <button
-            onClick={() => setActiveMode('portable')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all duration-300 ${
-              activeMode === 'portable'
-                /* REVISI: Aktif ganti dari teal ke primary hijau forest */
-                ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                : 'text-gray-500 hover:text-primary hover:bg-white/50'
-            }`}
-          >
-            <Smartphone className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Portable Mode</span>
-          </button>
-          <button
-            onClick={() => setActiveMode('panel')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all duration-300 ${
-              activeMode === 'panel'
-                /* REVISI: Aktif ganti dari teal ke primary hijau forest */
-                ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                : 'text-gray-500 hover:text-primary hover:bg-white/50'
-            }`}
-          >
-            <MonitorSpeaker className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Panel Mode</span>
-          </button>
-        </div>
-
         <button className="relative p-2 rounded-xl hover:bg-black/5 transition-colors text-gray-500 group">
           <Bell className="w-5 h-5 transition-transform group-hover:rotate-12" />
           {notifications.length > 0 && (

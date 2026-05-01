@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import logo from '../assets/logo-sigma.png'; 
-import { Leaf, Eye, EyeOff, Smartphone, MonitorSpeaker, AlertCircle, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, Smartphone, MonitorSpeaker, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { SystemType } from '../types';
 
 export default function AuthPage() {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, resetPassword } = useAuth();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -18,8 +18,34 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showVerificationPrompt, setShowVerificationPrompt] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
 
   const validateEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+
+  function openEmailApp() {
+    if (typeof window !== 'undefined') window.location.href = 'mailto:';
+  }
+
+  async function handleForgotPassword() {
+    setError('');
+    setSuccess('');
+
+    if (!validateEmail(resetEmail)) {
+      setError('Masukkan email yang valid untuk reset kata sandi.');
+      return;
+    }
+
+    setLoading(true);
+    const { error: err } = await resetPassword(resetEmail.trim());
+    if (err) setError('Gagal mengirim tautan reset kata sandi. Silakan coba lagi.');
+    else {
+      setSuccess('Tautan reset kata sandi sudah dikirim. Silakan cek email Anda.');
+      setShowForgotPassword(false);
+    }
+    setLoading(false);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -50,12 +76,17 @@ export default function AuthPage() {
     } else {
       const { error: err } = await signUp(email, password, fullName, systemType);
       if (err) {
-        if (err.includes('already registered')) setError('Email ini sudah terdaftar. Silakan masuk.');
-        else setError(err);
+        if (err.toLowerCase().includes('already registered') || err.toLowerCase().includes('sudah terdaftar')) {
+          setError('Email ini sudah terdaftar. Silakan masuk.');
+        } else {
+          setError('Pendaftaran gagal. Silakan coba lagi.');
+        }
       } else {
-        setSuccess('Akun berhasil dibuat! Silakan masuk.');
+        setSuccess('Akun berhasil dibuat. Silakan cek email untuk verifikasi sebelum masuk.');
+        setShowVerificationPrompt(true);
         setMode('login');
         setPassword('');
+        setConfirmPassword('');
       }
     }
     setLoading(false);
@@ -98,25 +129,6 @@ export default function AuthPage() {
               <p className="text-white/80 text-sm mt-1 text-center">Smart IoT for Growth Monitoring in Agriculture</p>
             </div>
 
-            <div className="flex bg-white/10 rounded-xl p-1 mb-6">
-              <button
-                onClick={() => { setMode('login'); setError(''); setSuccess(''); }}
-                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  mode === 'login' ? 'bg-primary text-white shadow-xl shadow-primary/20 scale-[1.02]' : 'text-white/30 hover:text-white'
-                }`}
-              >
-                Masuk
-              </button>
-              <button
-                onClick={() => { setMode('register'); setError(''); setSuccess(''); }}
-                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  mode === 'register' ? 'bg-primary text-white shadow-xl' : 'text-white/70 hover:text-white'
-                }`}
-              >
-                Daftar
-              </button>
-            </div>
-
             <AnimatePresence mode="wait">
               {error && (
                 <motion.div
@@ -141,6 +153,29 @@ export default function AuthPage() {
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {showVerificationPrompt && mode === 'login' && (
+              <div className="mb-6 rounded-2xl border border-primary/20 bg-white/5 p-4">
+                <p className="text-white text-sm font-semibold">Verifikasi email diperlukan</p>
+                <p className="text-white/70 text-xs mt-1">Buka email Anda, klik tautan verifikasi, lalu kembali ke halaman ini untuk masuk.</p>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={openEmailApp}
+                    className="flex-1 rounded-lg bg-primary text-white text-xs font-semibold py-2.5 hover:opacity-90 transition-all"
+                  >
+                    Buka Aplikasi Email
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowVerificationPrompt(false)}
+                    className="rounded-lg border border-white/20 text-white/80 text-xs font-semibold px-4 py-2.5 hover:bg-white/10 transition-all"
+                  >
+                    Tutup
+                  </button>
+                </div>
+              </div>
+            )}
 
             <AnimatePresence mode="wait">
               <motion.form
@@ -194,7 +229,54 @@ export default function AuthPage() {
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
+                  {mode === 'login' && (
+                    <div className="mt-2 text-right">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowForgotPassword(!showForgotPassword);
+                          setResetEmail(email);
+                          setError('');
+                          setSuccess('');
+                        }}
+                        className="text-xs text-white/80 hover:text-primary transition-colors"
+                      >
+                        Lupa Kata Sandi?
+                      </button>
+                    </div>
+                  )}
                 </div>
+
+                {mode === 'login' && showForgotPassword && (
+                  <div className="rounded-xl border border-white/15 bg-white/5 p-4">
+                    <p className="text-white text-sm font-semibold">Reset Kata Sandi</p>
+                    <p className="text-white/70 text-xs mt-1">Masukkan email akun Anda. Kami akan kirim tautan untuk mengganti kata sandi.</p>
+                    <input
+                      type="email"
+                      value={resetEmail}
+                      onChange={e => setResetEmail(e.target.value)}
+                      placeholder="nama@email.com"
+                      className="w-full mt-3 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-teal-400/60 focus:bg-white/15 transition-all text-sm"
+                    />
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={handleForgotPassword}
+                        disabled={loading}
+                        className="flex-1 rounded-xl bg-primary text-white text-sm font-semibold py-2.5 hover:opacity-90 disabled:bg-primary/40 transition-all"
+                      >
+                        Kirim Tautan Reset
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowForgotPassword(false)}
+                        className="rounded-xl border border-white/20 text-white/80 text-sm font-semibold px-4 py-2.5 hover:bg-white/10 transition-all"
+                      >
+                        Batal
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {mode === 'register' && (
                   <div>
@@ -267,6 +349,32 @@ export default function AuthPage() {
                     mode === 'login' ? 'Masuk' : 'Buat Akun'
                   )}
                 </button>
+
+                <div className="text-center mt-6">
+                  {mode === 'login' ? (
+                    <p className="text-white/70 text-sm">
+                      Belum mempunyai akun?{' '}
+                      <button
+                        type="button"
+                        onClick={() => { setMode('register'); setShowForgotPassword(false); setError(''); setSuccess(''); }}
+                        className="text-primary hover:underline font-semibold"
+                      >
+                        Daftar Sekarang
+                      </button>
+                    </p>
+                  ) : (
+                    <p className="text-white/70 text-sm">
+                      Sudah punya akun?{' '}
+                      <button
+                        type="button"
+                        onClick={() => { setMode('login'); setShowForgotPassword(false); setError(''); setSuccess(''); }}
+                        className="text-primary hover:underline font-semibold"
+                      >
+                        Masuk
+                      </button>
+                    </p>
+                  )}
+                </div>
               </motion.form>
             </AnimatePresence>
           </div>
