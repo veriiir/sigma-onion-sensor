@@ -6,8 +6,8 @@ import { useApp } from '../../contexts/AppContext';
 import { SystemType } from '../../types';
 
 const modeItems: { mode: SystemType; label: string; subtitle: string; icon: React.ReactNode }[] = [
-  { mode: 'portable', label: 'Sensor Genggam', subtitle: 'Monitoring per lokasi', icon: <Smartphone className="w-5 h-5" /> },
-  { mode: 'panel', label: 'Stasiun Tetap', subtitle: 'Monitoring per lahan', icon: <MonitorSpeaker className="w-5 h-5" /> },
+  { mode: 'portable', label: 'Portable Mode', subtitle: 'Monitoring per lokasi', icon: <Smartphone className="w-5 h-5" /> },
+  { mode: 'panel', label: 'Panel Mode', subtitle: 'Monitoring per lahan', icon: <MonitorSpeaker className="w-5 h-5" /> },
 ];
 
 function SidebarContent({ onClose }: { onClose?: () => void }) {

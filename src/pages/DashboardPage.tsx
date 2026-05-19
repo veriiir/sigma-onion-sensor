@@ -204,7 +204,7 @@ function PortableDashboard() {
             <Smartphone className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900 uppercase tracking-tighter">Sensor Genggam Portable</h2>
+            <h2 className="text-lg font-bold text-gray-900 uppercase tracking-tighter">Portable Mode</h2>
             <p className="text-sm text-neutral-muted font-medium">Pembacaan manual dari sensor lapangan</p>
           </div>
         </div>
@@ -310,7 +310,7 @@ function PanelDashboard() {
             <MonitorSpeaker className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900 uppercase tracking-tighter">Stasiun Panel Tetap</h2>
+            <h2 className="text-lg font-bold text-gray-900 uppercase tracking-tighter">Panel Mode</h2>
             <p className="text-sm text-neutral-muted font-medium">Pemantauan otomatis multi-lahan</p>
           </div>
         </div>

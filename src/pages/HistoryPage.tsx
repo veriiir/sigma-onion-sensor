@@ -75,7 +75,7 @@ function SensorDetailModal({ record, onClose }: { record: SensorReading; onClose
               <Thermometer className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm tracking-tighter">Detail Pembacaan Sensor</h3>
+              <h3 className="text-sm tracking-tighter">Rincian Sensor</h3>
               <p className="text-[10px] text-neutral-muted opacity-60 ">{record.created_at ? formatDate(record.created_at) : '—'}</p>
             </div>
           </div>
@@ -86,8 +86,8 @@ function SensorDetailModal({ record, onClose }: { record: SensorReading; onClose
 
         <div className="px-6 py-2 bg-gray-50 border-b border-gray-100 shrink-0">
           <div className="flex gap-4 text-xs text-gray-500">
-            <span>Mode: <span className="font-medium text-gray-700 capitalize">{record.system_type}</span></span>
-            <span>Lahan: <span className="font-medium text-gray-700 capitalize">{record.land_id ?? 'default'}</span></span>
+            <span>Jenis Mode: <span className="font-medium text-gray-700 capitalize">{record.system_type}</span></span>
+            <span>Nama Lahan: <span className="font-medium text-gray-700 capitalize">{record.land_id ?? 'Tidak Ada'}</span></span>
           </div>
         </div>
 
@@ -114,7 +114,7 @@ function SensorDetailModal({ record, onClose }: { record: SensorReading; onClose
                   />
                 </div>
                 <p className={`text-xs mt-1.5 font-medium ${isGood ? 'text-primary' : 'text-tertiary'}`}>
-                  {isGood ? 'Normal' : 'Di luar batas'}
+                  {isGood ? 'Baik' : 'Tidak Baik'}
                 </p>
               </div>
             );
@@ -164,7 +164,7 @@ function AIDetailModal({ record, onClose }: { record: AIAnalysisRecord; onClose:
         <div className="overflow-y-auto flex-1 overscroll-contain">
         <div className={`mx-6 mt-5 rounded-xl border p-4 ${sev.border} ${sev.bg}`}>
           <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-medium text-gray-500">Patogen Terdeteksi</p>
+            <p className="text-xs font-medium text-gray-500">Penyakit Terdeteksi</p>
             <div className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${sev.bg} ${sev.color}`}>
               {sev.icon}
               {sev.label}
@@ -193,11 +193,11 @@ function AIDetailModal({ record, onClose }: { record: AIAnalysisRecord; onClose:
         </div>
 
         <div className="px-6 mt-4 pb-5">
-          <p className="text-xs font-semibold text-gray-700 mb-2">Info Deteksi</p>
+          <p className="text-xs font-semibold text-gray-700 mb-2">Rincian Analisis</p>
           <div className="grid grid-cols-2 gap-2 text-xs">
             {[
-              { label: 'Mode', value: record.system_type },
-              { label: 'Lahan', value: record.land_id },
+              { label: 'Jenis Mode', value: record.system_type },
+              { label: 'Nama Lahan', value: record.land_id },
               { label: 'Bbox X', value: record.bbox_x?.toFixed(3) ?? '—' },
               { label: 'Bbox Y', value: record.bbox_y?.toFixed(3) ?? '—' },
               { label: 'Lebar', value: record.bbox_width?.toFixed(3) ?? '—' },
@@ -220,6 +220,12 @@ export default function HistoryPage() {
   const { user } = useAuth();
   const { activeMode } = useApp();
   const [tab, setTab] = useState<TabType>('sensor');
+  const [historyViewMode, setHistoryViewMode] = useState(activeMode); // New state for history mode
+
+  // Update historyViewMode when activeMode changes globally
+  useEffect(() => {
+    setHistoryViewMode(activeMode);
+  }, [activeMode]);
   const [sensorHistory, setSensorHistory] = useState<SensorReading[]>([]);
   const [aiHistory, setAiHistory] = useState<AIAnalysisRecord[]>([]);
   const [loading, setLoading] = useState(false);
@@ -246,7 +252,7 @@ export default function HistoryPage() {
         .from('sensor_readings')
         .select('*')
         .eq('user_id', user.id)
-        .eq('system_type', activeMode)
+        .eq('system_type', historyViewMode)
         .gte('created_at', startIso)
         .lte('created_at', endIso)
         .order('created_at', { ascending: false })
@@ -260,7 +266,7 @@ export default function HistoryPage() {
         .from('ai_analysis')
         .select('*')
         .eq('user_id', user.id)
-        .eq('system_type', activeMode)
+        .eq('system_type', historyViewMode)
         .gte('created_at', startIso)
         .lte('created_at', endIso)
         .order('created_at', { ascending: false })
@@ -270,7 +276,7 @@ export default function HistoryPage() {
           setLoading(false);
         });
     }
-  }, [user, activeMode, tab, startDate, endDate]);
+  }, [user, historyViewMode, tab, startDate, endDate]);
 
   function resetDates() {
     setStartDate(monthAgoStr());
@@ -287,7 +293,29 @@ export default function HistoryPage() {
         </div>
           <div>
             <h2 className="text-lg font-bold text-gray-900 uppercase tracking-tighter">Riwayat Pemantauan</h2>
-            <p className="text-sm text-neutral-muted font-medium">Mode {activeMode === 'portable' ? 'Sensor Genggam' : 'Stasiun Tetap'} — klik baris untuk rincian</p>
+            <p className="text-sm text-neutral-muted font-medium">Mode {historyViewMode === 'portable' ? 'Portable Mode' : 'Panel Mode'}</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 mb-4">
+          <p className="text-[10px] font-black uppercase italic tracking-widest text-primary">Pilih Mode</p>
+          <div className="flex bg-gray-100 rounded-xl p-1">
+            <button
+              onClick={() => setHistoryViewMode('portable')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                historyViewMode === 'portable' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Portable Mode
+            </button>
+            <button
+              onClick={() => setHistoryViewMode('panel')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                historyViewMode === 'panel' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Panel Mode
+            </button>
           </div>
         </div>
 
@@ -378,16 +406,16 @@ export default function HistoryPage() {
           sensorHistory.length === 0 ? (
             <div className="text-center py-16 text-gray-400">
               <Thermometer className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p className="font-medium">Tidak ada data sensor</p>
-              <p className="text-sm mt-1">Coba ubah rentang tanggal atau tunggu siklus pembaruan berikutnya</p>
+              <p className="font-medium">Belum ada Catatan Sensor</p>
+              <p className="text-sm mt-1">Coba atur ulang tanggal atau tunggu pembaruan otomatis</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50">
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Waktu</th>
-                    <th className="text-left px-3 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Lahan</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Waktu Pencatatan</th>
+                    <th className="text-left px-3 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nama Lahan</th>
                     {SENSOR_CONFIGS.map(c => (
                       <th key={c.key} className="text-right px-3 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">
                         {c.label}
@@ -407,7 +435,7 @@ export default function HistoryPage() {
                       className="group hover:bg-primary/5 cursor-pointer transition-all duration-300"
                     >
                       <td className="px-6 py-4 text-[11px] font-mono text-gray-500 font-bold tracking-tight whitespace-nowrap">{formatDate(row.created_at!)}</td>
-                            <td className="px-3 py-4 text-[10px] font-black capitalize text-center text-primary/70">{row.land_id ?? 'default'}</td>
+                            <td className="px-3 py-4 text-[10px] font-black capitalize text-center text-primary/70">{row.land_id ?? 'Tidak Ada'}</td>
                       {SENSOR_CONFIGS.map(c => {
                         const val = row[c.key] as number;
                         const isGood = val >= c.goodMin && val <= c.goodMax;
@@ -433,8 +461,8 @@ export default function HistoryPage() {
           aiHistory.length === 0 ? (
             <div className="text-center py-16 text-gray-400">
               <BrainCircuit className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p className="font-medium">Tidak ada analisis AI tersimpan</p>
-              <p className="text-sm mt-1">Simpan hasil analisis dari halaman Analisis AI untuk melihat riwayat</p>
+              <p className="font-medium">Belum ada Catatan Analisis AI</p>
+              <p className="text-sm mt-1">Simpan hasil analisis di halaman Analisis AI untuk melihat daftar riwayat</p>
             </div>
           ) : (
             <div className="divide-y divide-gray-50">
@@ -466,7 +494,7 @@ export default function HistoryPage() {
                     </div>
                     <div className="shrink-0 text-right">
                       <p className={`text-sm font-bold ${sev.color}`}>{row.confidence.toFixed(1)}%</p>
-                      <p className="text-xs text-gray-400">kepercayaan</p>
+                      <p className="text-xs text-gray-400">Tingkat Keyakinan</p>
                     </div>
                     <ChevronRight className="w-5 h-5 text-gray-200 group-hover:text-primary transition-all translate-x-[-10px] group-hover:translate-x-0" />
                   </motion.div>
