@@ -1,8 +1,7 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import SensorGauge from './SensorGauge';
-import { SensorConfig, SensorReading } from '../../types';
+import { SensorConfig } from '../../types';
 
 interface SensorCardProps {
   config: SensorConfig;

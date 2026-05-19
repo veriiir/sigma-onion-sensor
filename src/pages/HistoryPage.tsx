@@ -285,59 +285,60 @@ export default function HistoryPage() {
         <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center text-white shadow-xl shadow-primary/20">
           <History className="w-6 h-6" />
         </div>
-        <div>
-          <h2 className="text-lg font-bold text-gray-900 uppercase tracking-tighter">Riwayat Data</h2>
-          <p className="text-sm text-neutral-muted font-medium">Mode {activeMode === 'portable' ? 'Portable' : 'Panel'} — klik baris untuk detail</p>
+          <div>
+            <h2 className="text-lg font-bold text-gray-900 uppercase tracking-tighter">Riwayat Pemantauan</h2>
+            <p className="text-sm text-neutral-muted font-medium">Mode {activeMode === 'portable' ? 'Sensor Genggam' : 'Stasiun Tetap'} — klik baris untuk rincian</p>
+          </div>
         </div>
-      </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
-        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
-          <div className="flex items-center gap-2 mb-5 text-[10px] font-black uppercase italic tracking-widest text-primary">
-            <Calendar className="w-3.5 h-3.5" />
-            <span className="font-medium text-gray-700">Rentang Tanggal</span>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-3 flex-1">
-            <div className="flex items-center gap-2 flex-1">
-              <span className="text-xs text-gray-400 whitespace-nowrap">Dari</span>
-              <input
-                type="date"
-                value={startDate}
-                max={endDate}
-                onChange={e => setStartDate(e.target.value)}
-                className="w-full bg-transparent border-2 border-black/5 rounded-xl p-3 text-xs font-bold text-gray-700 focus:outline-none focus:border-primary transition-all uppercase tracking-widest"
-              />
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
+            <div className="flex items-center gap-2 mb-5 text-[10px] font-black uppercase italic tracking-widest text-primary">
+              <Calendar className="w-3.5 h-3.5" />
+              <span className="font-medium text-gray-700">Pilih Tanggal</span>
             </div>
-            <div className="flex items-center gap-2 flex-1">
-              <span className="text-xs text-gray-400 whitespace-nowrap">Hingga</span>
-              <input
-                type="date"
-                value={endDate}
-                min={startDate}
-                max={todayStr()}
-                onChange={e => setEndDate(e.target.value)}
-                className="w-full bg-transparent border-2 border-black/5 rounded-xl p-3 text-xs font-bold text-gray-700 focus:outline-none focus:border-primary transition-all uppercase tracking-widest"
-              />
+            <div className="flex flex-col sm:flex-row gap-3 flex-1">
+              <div className="flex items-center gap-2 flex-1">
+                <span className="text-xs text-gray-400 whitespace-nowrap">Dari</span>
+                <input
+                  type="date"
+                  value={startDate}
+                  max={endDate}
+                  onChange={e => setStartDate(e.target.value)}
+                  className="w-full bg-transparent border-2 border-black/5 rounded-xl p-3 text-xs font-bold text-gray-700 focus:outline-none focus:border-primary transition-all uppercase tracking-widest"
+                />
+              </div>
+              <div className="flex items-center gap-2 flex-1">
+                <span className="text-xs text-gray-400 whitespace-nowrap">Sampai</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  min={startDate}
+                  max={todayStr()}
+                  onChange={e => setEndDate(e.target.value)}
+                  className="w-full bg-transparent border-2 border-black/5 rounded-xl p-3 text-xs font-bold text-gray-700 focus:outline-none focus:border-primary transition-all uppercase tracking-widest"
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {hasCustomRange && (
+                <button
+                  onClick={resetDates}
+                  className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 bg-gray-100 px-3 py-2 rounded-xl transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  Reset
+                </button>
+              )}
+              <div className="flex items-center gap-1.5 text-xs text-primary bg-primary/10 px-3 py-2 rounded-xl">
+                <Search className="w-3.5 h-3.5" />
+                {loading ? 'Memuat...' : 'Data Terbaru'}
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {hasCustomRange && (
-              <button
-                onClick={resetDates}
-                className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 bg-gray-100 px-3 py-2 rounded-xl transition-colors"
-              >
-                <X className="w-3.5 h-3.5" />
-                Reset
-              </button>
-            )}
-            <div className="flex items-center gap-1.5 text-xs text-primary bg-primary/10 px-3 py-2 rounded-xl">
-              <Search className="w-3.5 h-3.5" />
-              {loading ? 'Memuat...' : 'Hasil diperbarui'}
-            </div>
-          </div>
+          {dateError && <p className="text-xs text-red-500 mt-2">{dateError}</p>}
         </div>
-        {dateError && <p className="text-xs text-red-500 mt-2">{dateError}</p>}
-      </div>
+
 
       <div className="flex items-center gap-3">
         <div className="flex bg-gray-100 rounded-xl p-1">

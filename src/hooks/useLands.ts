@@ -76,7 +76,7 @@ export function useLands(systemType?: SystemType) {
 
       const { data: inserted } = await supabase
         .from('lands')
-        .upsert(toInsert, { onConflict: 'id,user_id' })
+        .upsert(toInsert, { onConflict: 'id,user_id,system_type' })
         .select();
       setLands(inserted ?? []);
     }

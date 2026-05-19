@@ -6,8 +6,8 @@ import { useApp } from '../../contexts/AppContext';
 import { SystemType } from '../../types';
 
 const modeItems: { mode: SystemType; label: string; subtitle: string; icon: React.ReactNode }[] = [
-  { mode: 'portable', label: 'Portable Mode', subtitle: 'Monitoring per lokasi', icon: <Smartphone className="w-5 h-5" /> },
-  { mode: 'panel', label: 'Panel Mode', subtitle: 'Monitoring per lahan', icon: <MonitorSpeaker className="w-5 h-5" /> },
+  { mode: 'portable', label: 'Sensor Genggam', subtitle: 'Monitoring per lokasi', icon: <Smartphone className="w-5 h-5" /> },
+  { mode: 'panel', label: 'Stasiun Tetap', subtitle: 'Monitoring per lahan', icon: <MonitorSpeaker className="w-5 h-5" /> },
 ];
 
 function SidebarContent({ onClose }: { onClose?: () => void }) {
@@ -32,7 +32,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
             <img src={logo} alt="SIGMA Logo" className="w-9 h-9 object-contain" />
             <div>
               <h1 className="text-white font-extrabold text-xl tracking-tighter leading-none">SIGMA</h1>
-              <p className="text-white/50 text-xs mt-0.5">Smart IoT for Growth Monitoring in Agriculture</p>
+              <p className="text-white/50 text-[10px] mt-1 leading-tight font-medium">Sistem IoT Pintar Pemantauan Budidaya Bawang Merah</p>
             </div>
           </div>
         </div>

@@ -9,7 +9,7 @@ import {
 import exifr from 'exifr';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
-import { useAIDetection, RunDetectionOptions } from '../hooks/useAIDetection';
+import { useAIDetection } from '../hooks/useAIDetection';
 import { useAnalysisSession, fileToBase64, type PersistedLocation } from '../hooks/useAnalysisSession';
 import { useNotification } from '../contexts/NotificationContext';
 import { useLands, validateLandCoords } from '../hooks/useLands';
@@ -424,7 +424,7 @@ export default function AIAnalysisPage() {
               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
                 <div className="flex items-center gap-2 text-primary">
                   <Scan className="w-4 h-4" />
-                  <span className="text-sm font-semibold text-gray-700">Gambar Capture Lapangan</span>
+                  <span className="text-sm font-semibold text-gray-700">Foto Dari Lapangan</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <button onClick={() => fileInputRef.current?.click()} disabled={analyzing}
@@ -466,11 +466,11 @@ export default function AIAnalysisPage() {
                   <div className="absolute inset-0 bg-[#14261D]/80 flex flex-col items-center justify-center gap-6">
                     <div className="w-16 h-16 border-4 border-secondary/10 border-t-secondary rounded-full animate-spin shadow-2xl" />
                     <div className="text-center">
-                      <p className="text-white font-semibold">Pipeline 3 Lapis Berjalan...</p>
-                      <p className="text-secondary font-bold text-xs uppercase mt-2 tracking-[0.2em] animate-pulse">Validasi Gambar → Sensor → Aksi</p>
+                      <p className="text-white font-semibold">Proses Analisis Sedang Berjalan...</p>
+                      <p className="text-secondary font-bold text-xs uppercase mt-2 tracking-[0.2em] animate-pulse">Validasi Foto → Cek Sensor → Saran Aksi</p>
                     </div>
                     <div className="flex gap-3">
-                      {['Kualitas', 'Inferensi', 'Korelasi'].map((s, i) => (
+                      {['Kualitas', 'Prediksi', 'Kesesuaian'].map((s, i) => (
                         <div key={s} className="flex items-center gap-1">
                           <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
                           <span className="text-primary-300/70 text-xs">{s}</span>
@@ -479,6 +479,7 @@ export default function AIAnalysisPage() {
                     </div>
                   </div>
                 )}
+
 
                 {!analyzing && detection && imgLoaded && bboxStyle && (
                   <AnimatePresence>
@@ -554,7 +555,7 @@ export default function AIAnalysisPage() {
                   {/* Detection Result */}
                   <div className={`bg-white rounded-2xl shadow-sm border p-5 ${sevCfg.border}`}>
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-sm font-bold text-gray-700">Hasil Deteksi</h3>
+                      <h3 className="text-sm font-bold text-gray-700">Hasil Analisis</h3>
                       <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${sevCfg.bg} ${sevCfg.color}`}>
                         {sevCfg.icon} {sevCfg.label}
                       </div>
@@ -564,10 +565,10 @@ export default function AIAnalysisPage() {
                       {detection.pipeline?.overriddenLabel && (
                         <p className="text-xs text-blue-500 mt-1">Dikoreksi dari hasil AI asli</p>
                       )}
-                      <p className="text-gray-400 text-sm mt-1">Patogen Terdeteksi</p>
+                      <p className="text-gray-400 text-sm mt-1">Penyakit Terdeteksi</p>
                       <div className="mt-4">
                         <div className="flex justify-between text-xs text-gray-400 mb-1.5">
-                          <span>Kepercayaan Model</span>
+                          <span>Tingkat Keyakinan</span>
                           <span className="font-bold text-gray-700">{detection.confidence.toFixed(1)}%</span>
                         </div>
                         <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
@@ -594,16 +595,16 @@ export default function AIAnalysisPage() {
 
                   {/* Recommendation */}
                   <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-                    <h3 className="text-sm font-bold text-gray-700 mb-3">Ringkasan Rekomendasi</h3>
+                    <h3 className="text-sm font-bold text-gray-700 mb-3">Saran Tindakan</h3>
                     <p className="text-sm text-gray-500 leading-relaxed">{diseaseInfo?.recommendation}</p>
                   </div>
 
                   {/* Model Info */}
                   <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-                    <h3 className="text-sm font-bold text-gray-700 mb-3">Info Model & Deteksi</h3>
+                    <h3 className="text-sm font-bold text-gray-700 mb-3">Rincian Teknis</h3>
                     <div className="space-y-2">
                       {[
-                        { label: 'Model', value: 'penyakit-bawang/1' },
+                        { label: 'Versi AI', value: 'penyakit-bawang/1' },
                         { label: 'Lahan', value: activeMode === 'panel' ? selectedLand.replace('lahan', 'Lahan ') : 'Portable' },
                         { label: 'Bbox X', value: detection.bbox_x.toFixed(3) },
                         { label: 'Bbox Y', value: detection.bbox_y.toFixed(3) },
@@ -665,23 +666,23 @@ function LocationCard({
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <p className="text-sm font-semibold text-teal-700">Lokasi Terdeteksi</p>
+              <p className="text-sm font-semibold text-teal-700">Lokasi Foto</p>
               <span className="text-xs bg-teal-100 text-secondary px-2 py-0.5 rounded-full font-medium uppercase tracking-wide">
                 {location.source === 'gps' ? 'GPS Real-time' : 'EXIF Foto'}
               </span>
             </div>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2">
               <div>
-                <p className="text-xs text-secondary/70">Latitude</p>
+                <p className="text-xs text-secondary/70">Lintang (Lat)</p>
                 <p className="text-sm font-mono font-medium text-secondary">{formatCoord(location.latitude, 'lat')}</p>
               </div>
               <div>
-                <p className="text-xs text-secondary/70">Longitude</p>
+                <p className="text-xs text-secondary/70">Bujur (Lon)</p>
                 <p className="text-sm font-mono font-medium text-secondary/80">{formatCoord(location.longitude, 'lon')}</p>
               </div>
             </div>
             {location.timestamp && (
-              <p className="text-xs text-secondary/70 mt-1.5">Waktu Foto: {location.timestamp}</p>
+              <p className="text-xs text-secondary/70 mt-1.5">Waktu Pengambilan: {location.timestamp}</p>
             )}
           </div>
         </div>
@@ -694,7 +695,7 @@ function LocationCard({
               </div>
               <div className="flex-1 min-w-0">
                 <p className={`text-sm font-semibold ${validation.withinRadius ? 'text-teal-700' : 'text-red-700'}`}>
-                  {validation.withinRadius ? 'Lokasi Valid — Cocok dengan Lahan' : 'Lokasi di Luar Batas Lahan'}
+                  {validation.withinRadius ? 'Lokasi Sesuai — Valid' : 'Lokasi Tidak Sesuai — Di Luar Lahan'}
                 </p>
                 {validation.land && (
                   <p className={`text-xs mt-0.5 ${validation.withinRadius ? 'text-teal-600' : 'text-red-600'}`}>

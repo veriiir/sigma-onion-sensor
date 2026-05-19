@@ -1,4 +1,3 @@
-import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import maskot from './assets/maskot-sigma.png'; 
 import { AuthProvider, useAuth } from './contexts/AuthContext';

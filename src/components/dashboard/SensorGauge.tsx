@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface SensorGaugeProps {
   value: number;
   min: number;

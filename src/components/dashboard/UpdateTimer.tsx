@@ -1,9 +1,10 @@
-import React from 'react';
 import { RefreshCw, Clock } from 'lucide-react';
 
 interface UpdateTimerProps {
   nextUpdateIn: number;
   lastUpdated: Date;
+  refreshInterval?: number;
+  scheduleLabel?: string;
 }
 
 function formatTime(ms: number): string {
@@ -18,9 +19,13 @@ function formatDate(date: Date): string {
   return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
-export default function UpdateTimer({ nextUpdateIn, lastUpdated }: UpdateTimerProps) {
-  const SYNC_INTERVAL = 6 * 60 * 60 * 1000;
-  const progress = ((SYNC_INTERVAL - nextUpdateIn) / SYNC_INTERVAL) * 100;
+export default function UpdateTimer({
+  nextUpdateIn,
+  lastUpdated,
+  refreshInterval = 6 * 60 * 60 * 1000,
+  scheduleLabel = '6h Update Cycle',
+}: UpdateTimerProps) {
+  const progress = refreshInterval > 0 ? ((refreshInterval - nextUpdateIn) / refreshInterval) * 100 : 100;
 
   return (
     /* REVISI: Border-gray-100 diubah ke black/5 agar lebih halus sesuai gaya Bento UI profesional */
@@ -33,8 +38,8 @@ export default function UpdateTimer({ nextUpdateIn, lastUpdated }: UpdateTimerPr
         </div>
         <div>
           {/* REVISI: Label menggunakan uppercase, black, dan neutral-muted sesuai desain Vivid Earth */}
-          <p className="text-[10px] text-neutral-muted leading-none font-black uppercase italic tracking-widest opacity-50">Sistem Status</p>
-          <p className="text-sm font-black text-primary mt-0.5 uppercase italic">LIVE MODE</p>
+          <p className="text-[10px] text-neutral-muted leading-none font-black uppercase italic tracking-widest opacity-50">Status Sistem</p>
+          <p className="text-sm font-black text-primary mt-0.5 uppercase italic">MODE AKTIF</p>
         </div>
       </div>
 
@@ -44,15 +49,15 @@ export default function UpdateTimer({ nextUpdateIn, lastUpdated }: UpdateTimerPr
         {/* REVISI: Icon Clock mengikuti warna neutral-muted (abu-abu kehijauan) */}
         <Clock className="w-4 h-4 text-neutral-muted" />
         <div>
-          <p className="text-[10px] text-neutral-muted leading-none font-black uppercase italic tracking-widest opacity-50">Sync Schedule</p>
+          <p className="text-[10px] text-neutral-muted leading-none font-black uppercase italic tracking-widest opacity-50">Jadwal Sinkron</p>
           <p className="text-sm font-bold text-gray-800 mt-0.5 font-mono">{formatTime(nextUpdateIn)}</p>
         </div>
       </div>
 
       <div className="flex-1 hidden sm:block">
         <div className="flex justify-between text-[10px] font-black text-neutral-muted mb-2 uppercase italic tracking-widest opacity-40 px-1">
-          <span>6h Update Cycle</span>
-          <span>{Math.round(progress)}% Compleated</span>
+          <span>{scheduleLabel}</span>
+          <span>{Math.round(progress)}% Selesai</span>
         </div>
         <div className="h-1.5 bg-gray-50 rounded-full overflow-hidden border border-black/[0.03]">
           <div
@@ -66,7 +71,7 @@ export default function UpdateTimer({ nextUpdateIn, lastUpdated }: UpdateTimerPr
       <div className="flex items-center gap-3 text-neutral-muted shrink-0 pl-2">
         <RefreshCw className="w-3.5 h-3.5 opacity-60" />
         <div className="text-right">
-          <p className="text-[9px] font-black uppercase opacity-40 italic tracking-widest leading-none">Last Log</p>
+          <p className="text-[9px] font-black uppercase opacity-40 italic tracking-widest leading-none">Catatan Terakhir</p>
           <span className="text-xs font-bold text-gray-500 italic">{formatDate(lastUpdated)}</span>
         </div>
       </div>

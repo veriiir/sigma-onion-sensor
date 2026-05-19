@@ -4,10 +4,10 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 
-const SYNC_INTERVAL = 6 * 60 * 60 * 1000;
-const SIGNIFICANT_THRESHOLD = 0.1;
+const PANEL_REFRESH_INTERVAL = 10 * 1000;
+const PORTABLE_REFRESH_INTERVAL = 0;
 
-function generateSensorData(systemType: SystemType, landId: LandId): Omit<SensorReading, 'id' | 'user_id' | 'created_at'> {
+function generateDemoSensorData(systemType: SystemType, landId: LandId): SensorReading {
   const variance = systemType === 'portable' ? 1.0 : 0.5;
   const offset = landId === 'lahan2' ? 5 : landId === 'lahan3' ? 10 : 0;
   return {
@@ -20,6 +20,7 @@ function generateSensorData(systemType: SystemType, landId: LandId): Omit<Sensor
     temperature: parseFloat((24 + offset * 0.2 + Math.random() * 8 * variance).toFixed(1)),
     ph: parseFloat((5.8 + offset * 0.05 + Math.random() * 1.2 * variance).toFixed(2)),
     conductivity: parseFloat((0.6 + offset * 0.05 + Math.random() * 1.8 * variance).toFixed(3)),
+    created_at: new Date().toISOString(),
   };
 }
 
@@ -33,128 +34,139 @@ function checkCritical(data: SensorReading) {
   return msgs;
 }
 
-function isSignificantChange(prev: SensorReading, next: SensorReading): boolean {
-  const keys: Array<keyof SensorReading> = ['moisture', 'nitrogen', 'phosphorus', 'potassium', 'temperature', 'ph', 'conductivity'];
-  return keys.some(k => {
-    const pv = prev[k] as number;
-    const nv = next[k] as number;
-    if (!pv) return !!nv;
-    return Math.abs(nv - pv) / Math.abs(pv) >= SIGNIFICANT_THRESHOLD;
-  });
+function toDate(value?: string) {
+  if (!value) return new Date();
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? new Date() : date;
 }
 
-async function fetchTodayRecord(userId: string, systemType: SystemType, landId: LandId): Promise<SensorReading | null> {
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  const { data } = await supabase
+async function fetchLatestReading(
+  userId: string,
+  systemType: SystemType,
+  landId: LandId,
+): Promise<SensorReading | null> {
+  const { data, error } = await supabase
     .from('sensor_readings')
     .select('*')
     .eq('user_id', userId)
     .eq('system_type', systemType)
     .eq('land_id', landId)
-    .gte('created_at', todayStart.toISOString())
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
+
+  if (error) throw error;
   return data ?? null;
-}
-
-async function fetchSyncState(userId: string, systemType: SystemType, landId: LandId): Promise<Date | null> {
-  const { data } = await supabase
-    .from('sync_state')
-    .select('last_synced_at')
-    .eq('user_id', userId)
-    .eq('system_type', systemType)
-    .eq('land_id', landId)
-    .maybeSingle();
-  return data ? new Date(data.last_synced_at) : null;
-}
-
-async function saveSyncState(userId: string, systemType: SystemType, landId: LandId) {
-  await supabase
-    .from('sync_state')
-    .upsert(
-      { user_id: userId, system_type: systemType, land_id: landId, last_synced_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-      { onConflict: 'user_id,system_type,land_id' }
-    );
 }
 
 export function useSensorData(systemType: SystemType, landId: LandId) {
   const { user } = useAuth();
   const { push } = useNotification();
-  const [sensorData, setSensorData] = useState<SensorReading>(() => generateSensorData(systemType, landId) as SensorReading);
-  const [nextUpdateIn, setNextUpdateIn] = useState(SYNC_INTERVAL);
+  const [sensorData, setSensorData] = useState<SensorReading>(() => generateDemoSensorData(systemType, landId));
+  const [nextUpdateIn, setNextUpdateIn] = useState(systemType === 'panel' ? PANEL_REFRESH_INTERVAL : PORTABLE_REFRESH_INTERVAL);
   const [lastUpdated, setLastUpdated] = useState(new Date());
-  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [isDemoData, setIsDemoData] = useState(true);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const remainingRef = useRef(SYNC_INTERVAL);
-  const initializedRef = useRef(false);
+  const warningShownRef = useRef(false);
 
-  const fetchAndSave = useCallback(async (forceInsert = false) => {
-    const newData = generateSensorData(systemType, landId);
-    setSensorData(newData as SensorReading);
-    setLastUpdated(new Date());
-    remainingRef.current = SYNC_INTERVAL;
-    setNextUpdateIn(SYNC_INTERVAL);
-
-    checkCritical(newData as SensorReading).forEach(msg =>
-      push({ type: 'error', title: 'Nilai Sensor Kritis!', message: msg, duration: 8000 })
-    );
-
-    if (user) {
-      await saveSyncState(user.id, systemType, landId);
-      const existing = await fetchTodayRecord(user.id, systemType, landId);
-      if (forceInsert || !existing || isSignificantChange(existing as SensorReading, newData as SensorReading)) {
-        await supabase.from('sensor_readings').insert({ ...newData, user_id: user.id });
-        push({ type: 'success', title: 'Data Tersimpan', message: 'Pembacaan sensor berhasil disimpan ke cloud.' });
-      }
+  const refreshSensorData = useCallback(async (showFeedback = false) => {
+    if (!user) {
+      const demo = generateDemoSensorData(systemType, landId);
+      setSensorData(demo);
+      setLastUpdated(toDate(demo.created_at));
+      setIsDemoData(true);
+      return;
     }
-  }, [systemType, landId, user, push]);
 
-  useEffect(() => {
-    if (!user || initializedRef.current) return;
-    initializedRef.current = true;
+    setLoading(true);
+    try {
+      const latest = await fetchLatestReading(user.id, systemType, landId);
 
-    fetchSyncState(user.id, systemType, landId).then(lastSynced => {
-      let remaining: number;
+      if (!latest) {
+        const demo = generateDemoSensorData(systemType, landId);
+        setSensorData(demo);
+        setLastUpdated(toDate(demo.created_at));
+        setIsDemoData(true);
 
-      if (lastSynced) {
-        const elapsed = Date.now() - lastSynced.getTime();
-        remaining = Math.max(0, SYNC_INTERVAL - elapsed);
-      } else {
-        remaining = 0;
+        if (showFeedback || !warningShownRef.current) {
+          warningShownRef.current = true;
+          push({
+            type: 'info',
+            title: 'Belum Ada Data Alat',
+            message: 'Dashboard menampilkan data demo sampai alat mengirim data ke Supabase.',
+            duration: 6000,
+          });
+        }
+        return;
       }
 
-      remainingRef.current = remaining > 0 ? remaining : SYNC_INTERVAL;
-      setNextUpdateIn(remainingRef.current);
+      warningShownRef.current = false;
+      setSensorData(latest);
+      setLastUpdated(toDate(latest.created_at));
+      setIsDemoData(false);
 
-      if (remaining <= 0) {
-        fetchTodayRecord(user.id, systemType, landId).then(existing => {
-          fetchAndSave(!existing);
+      checkCritical(latest).forEach(msg =>
+        push({ type: 'error', title: 'Nilai Sensor Kritis!', message: msg, duration: 8000 })
+      );
+
+      if (showFeedback) {
+        push({
+          type: 'success',
+          title: 'Data Terbaru Dimuat',
+          message: 'Pembacaan sensor terakhir berhasil diambil dari Supabase.',
         });
       }
-
-      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
-      function scheduleCycle(delay: number) {
-        syncTimerRef.current = setTimeout(async () => {
-          await fetchAndSave();
-          scheduleCycle(SYNC_INTERVAL);
-        }, delay);
+    } catch (error) {
+      console.error('Failed to fetch latest sensor reading:', error);
+      if (showFeedback) {
+        push({
+          type: 'error',
+          title: 'Gagal Memuat Sensor',
+          message: 'Periksa koneksi Supabase atau endpoint alat.',
+          duration: 6000,
+        });
       }
-      scheduleCycle(remaining > 0 ? remaining : SYNC_INTERVAL);
+    } finally {
+      setLoading(false);
+      setNextUpdateIn(systemType === 'panel' ? PANEL_REFRESH_INTERVAL : PORTABLE_REFRESH_INTERVAL);
+    }
+  }, [user, systemType, landId, push]);
 
-      if (countdownRef.current) clearInterval(countdownRef.current);
-      countdownRef.current = setInterval(() => {
-        remainingRef.current = Math.max(0, remainingRef.current - 1000);
-        setNextUpdateIn(remainingRef.current);
-      }, 1000);
-    });
+  useEffect(() => {
+    refreshSensorData(false);
+  }, [refreshSensorData]);
+
+  useEffect(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (countdownRef.current) clearInterval(countdownRef.current);
+    setNextUpdateIn(systemType === 'panel' ? PANEL_REFRESH_INTERVAL : PORTABLE_REFRESH_INTERVAL);
+
+    if (systemType !== 'panel') return;
+
+    timerRef.current = setInterval(() => {
+      refreshSensorData(false);
+    }, PANEL_REFRESH_INTERVAL);
+
+    countdownRef.current = setInterval(() => {
+      setNextUpdateIn(prev => Math.max(0, prev - 1000));
+    }, 1000);
 
     return () => {
-      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+      if (timerRef.current) clearInterval(timerRef.current);
       if (countdownRef.current) clearInterval(countdownRef.current);
     };
-  }, [user, systemType, landId]);
+  }, [systemType, refreshSensorData]);
 
-  return { sensorData, nextUpdateIn, lastUpdated };
+  return {
+    sensorData,
+    nextUpdateIn,
+    lastUpdated,
+    loading,
+    isDemoData,
+    refreshSensorData,
+    refreshInterval: systemType === 'panel' ? PANEL_REFRESH_INTERVAL : PORTABLE_REFRESH_INTERVAL,
+  };
 }
+

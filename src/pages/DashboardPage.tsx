@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Smartphone, MonitorSpeaker, Thermometer, Droplets, Zap, FlaskConical,
-  BrainCircuit, Camera, AlertTriangle, ShieldAlert, CheckCircle, Clock, MapPin,
+  BrainCircuit, Camera, AlertTriangle, ShieldAlert, CheckCircle, Clock, MapPin, RefreshCw,
 } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -131,7 +131,7 @@ function StatBadge({ icon, label, value, color }: { icon: React.ReactNode; label
 }
 
 function GreetingBanner() {
-  const { user, profile } = useAuth();
+  const { profile } = useAuth();
 
   const hour = new Date().getHours();
   const greeting = hour < 11 ? 'Selamat Pagi' : hour < 15 ? 'Selamat Siang' : hour < 19 ? 'Selamat Sore' : 'Selamat Malam';
@@ -147,16 +147,38 @@ function GreetingBanner() {
 
 function PortableDashboard() {
   const { activeMode, selectedLand, setSelectedLand } = useApp();
-  const { sensorData, nextUpdateIn, lastUpdated } = useSensorData(activeMode, selectedLand);
+  const {
+    sensorData,
+    nextUpdateIn,
+    lastUpdated,
+    loading,
+    isDemoData,
+    refreshSensorData,
+    refreshInterval,
+  } = useSensorData(activeMode, selectedLand);
   const prevDataRef = useRef<SensorReading | null>(null);
   const prevData = prevDataRef.current;
   prevDataRef.current = sensorData;
 
-  const [lands, setLands] = useState<Land[]>(INITIAL_LANDS);
+  const [lands, setLands] = useState<Land[]>(() => {
+    const saved = localStorage.getItem('sigma_lands_data');
+    return saved ? JSON.parse(saved) : INITIAL_LANDS;
+  });
   useEffect(() => {
     const saved = localStorage.getItem('sigma_lands_data');
     if (saved) setLands(JSON.parse(saved));
   }, [selectedLand]);
+
+  useEffect(() => {
+    async function fetchLands() {
+      const { data } = await supabase.from('lands').select('*');
+      if (!data) return;
+      const merged = [...INITIAL_LANDS, ...data];
+      setLands(merged);
+      localStorage.setItem('sigma_lands_data', JSON.stringify(merged));
+    }
+    fetchLands();
+  }, []);
 
   useEffect(() => {
     const portableLands = lands.filter(l => l.system_type === 'portable');
@@ -165,7 +187,8 @@ function PortableDashboard() {
     if (!exists) setSelectedLand(portableLands[0].id);
   }, [lands, selectedLand, setSelectedLand]);
 
-  const currentLandName = lands.find(l => l.id === selectedLand)?.label || 'Lokasi Portable';
+  const currentLandName = lands.find(l => l.id === selectedLand && l.system_type === activeMode)?.label || 
+    (activeMode === 'portable' ? 'Lokasi Portable' : 'Lokasi');
 
   const healthyCount = SENSOR_CONFIGS.filter(c => {
     const val = sensorData[c.key] as number;
@@ -182,13 +205,28 @@ function PortableDashboard() {
           </div>
           <div>
             <h2 className="text-lg font-bold text-gray-900 uppercase tracking-tighter">Sensor Genggam Portable</h2>
-            <p className="text-sm text-neutral-muted font-medium">Pembacaan real-time dari sensor lapangan</p>
+            <p className="text-sm text-neutral-muted font-medium">Pembacaan manual dari sensor lapangan</p>
           </div>
         </div>
-        <LandSelector selectedLand={selectedLand} onSelect={setSelectedLand} systemType={activeMode} />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => refreshSensorData(true)}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-white text-xs font-bold uppercase tracking-tight shadow-sm shadow-primary/20 disabled:opacity-60 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Ambil Data
+          </button>
+          <LandSelector selectedLand={selectedLand} onSelect={setSelectedLand} systemType={activeMode} />
+        </div>
       </div>
 
-      <UpdateTimer nextUpdateIn={nextUpdateIn} lastUpdated={lastUpdated} />
+      <UpdateTimer
+        nextUpdateIn={nextUpdateIn}
+        lastUpdated={lastUpdated}
+        refreshInterval={refreshInterval}
+        scheduleLabel={isDemoData ? 'Data Contoh' : 'Pembaruan Manual'}
+      />
 
       <motion.div
         key={selectedLand}
@@ -207,9 +245,9 @@ function PortableDashboard() {
         <div>
           <div className="flex items-center justify-between mb-4 border-b border-black/5 pb-2">
             <h3 className="text-base font-black text-gray-800 tracking-tighter uppercase leading-none">
-              Data Sensor <span className="text-primary">{currentLandName}</span>
+              Data Sensor <span className="text-primary">{currentLandName || 'Lokasi'}</span>
             </h3>
-            <span className="text-[10px] font-black text-neutral-muted bg-gray-50 border px-3 py-1 rounded-full uppercase italic">7 Parameter Detect</span>
+            <span className="text-[10px] font-black text-neutral-muted bg-gray-50 border px-3 py-1 rounded-full uppercase italic">7 Parameter Terdeteksi</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {SENSOR_CONFIGS.map((config, i) => (
@@ -224,16 +262,30 @@ function PortableDashboard() {
 
 function PanelDashboard() {
   const { activeMode, selectedLand, setSelectedLand } = useApp();
-  const { sensorData, nextUpdateIn, lastUpdated } = useSensorData(activeMode, selectedLand);
+  const { sensorData, nextUpdateIn, lastUpdated, isDemoData, refreshInterval } = useSensorData(activeMode, selectedLand);
   const prevDataRef = useRef<SensorReading | null>(null);
   const prevData = prevDataRef.current;
   prevDataRef.current = sensorData;
 
-  const [lands, setLands] = useState<Land[]>(INITIAL_LANDS);
+  const [lands, setLands] = useState<Land[]>(() => {
+    const saved = localStorage.getItem('sigma_lands_data');
+    return saved ? JSON.parse(saved) : INITIAL_LANDS;
+  });
   useEffect(() => {
     const saved = localStorage.getItem('sigma_lands_data');
     if (saved) setLands(JSON.parse(saved));
   }, [selectedLand]);
+
+  useEffect(() => {
+    async function fetchLands() {
+      const { data } = await supabase.from('lands').select('*');
+      if (!data) return;
+      const merged = [...INITIAL_LANDS, ...data];
+      setLands(merged);
+      localStorage.setItem('sigma_lands_data', JSON.stringify(merged));
+    }
+    fetchLands();
+  }, []);
 
   useEffect(() => {
     const panelLands = lands.filter(l => l.system_type === 'panel');
@@ -265,7 +317,12 @@ function PanelDashboard() {
         <LandSelector selectedLand={selectedLand} onSelect={setSelectedLand} systemType={activeMode} />
       </div>
 
-      <UpdateTimer nextUpdateIn={nextUpdateIn} lastUpdated={lastUpdated} />
+      <UpdateTimer
+        nextUpdateIn={nextUpdateIn}
+        lastUpdated={lastUpdated}
+        refreshInterval={refreshInterval}
+        scheduleLabel={isDemoData ? 'Data Contoh' : 'Otomatis (10 dtk)'}
+      />
 
       <motion.div
         key={selectedLand}
@@ -284,9 +341,9 @@ function PanelDashboard() {
         <div>
           <div className="flex items-center justify-between mb-4 border-b border-black/5 pb-2">
             <h3 className="text-base font-black text-gray-800 tracking-tighter uppercase leading-none">
-              Data Sensor <span className="text-primary">{currentLand.label}</span>
+              Data Sensor <span className="text-primary">{currentLand?.label || 'Lokasi'}</span>
             </h3>
-            <span className="text-[10px] font-black text-neutral-muted bg-gray-50 border px-3 py-1 rounded-full uppercase italic">7 Parameter Detect</span>
+            <span className="text-[10px] font-black text-neutral-muted bg-gray-50 border px-3 py-1 rounded-full uppercase italic">7 Parameter Terdeteksi</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {SENSOR_CONFIGS.map((config, i) => (

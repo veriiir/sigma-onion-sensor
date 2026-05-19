@@ -34,6 +34,10 @@ export default function LandSelector({ selectedLand, onSelect, systemType }: Lan
     }
     fetchLands();
   }, []);
+
+  React.useEffect(() => {
+    localStorage.setItem('sigma_lands_data', JSON.stringify(lands));
+  }, [lands]);
   
   const ref = React.useRef<HTMLDivElement>(null);
   const isPortable = systemType === 'portable';
@@ -95,8 +99,8 @@ export default function LandSelector({ selectedLand, onSelect, systemType }: Lan
       setNewLocName('');
       setCoords({ lat: '', lng: '' });
       
-    } catch (err: any) {
-      setErrorMsg(err.message || "Gagal menyimpan data ke database.");
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "Gagal menyimpan data ke database.");
     } finally {
       setIsSaving(false);
     }

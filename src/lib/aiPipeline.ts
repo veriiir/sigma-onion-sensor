@@ -189,11 +189,11 @@ const ACTION_LIBRARY: Record<string, (sev: 'Ringan' | 'Sedang' | 'Berat') => Act
     { phase: 'chemical', label: 'Fungisida Difenokonazol', detail: 'Score 250 EC 0.5 mL/L. Tambah adjuvant perekat bila hujan sering.', urgency: sev === 'Berat' ? 'immediate' : 'within_24h' },
     { phase: 'monitoring', label: 'Pantau kelembaban relatif', detail: 'Hindari kelembaban > 80% berkepanjangan. Pasang mulsa jika perlu.', urgency: 'routine' },
   ],
-  'Sehat': (_sev) => [
+  'Sehat': () => [
     { phase: 'monitoring', label: 'Pertahankan praktik budidaya', detail: 'Tanaman sehat. Lanjutkan jadwal pemupukan dan irigasi rutin.', urgency: 'routine' },
     { phase: 'monitoring', label: 'Pantau 7 hari ke depan', detail: 'Periksa gejala awal bercak daun setiap pagi hari.', urgency: 'routine' },
   ],
-  'Masalah Nutrisi Tanah': (_sev) => [
+  'Masalah Nutrisi Tanah': () => [
     { phase: 'physical', label: 'Koreksi pH tanah', detail: 'Jika pH < 5.5, tambahkan kapur pertanian (dolomit) 1–2 ton/Ha. Tunggu 2 minggu sebelum tanam ulang.', urgency: 'within_24h' },
     { phase: 'chemical', label: 'Pupuk NPK berimbang', detail: 'Aplikasi pupuk Urea 200 kg/Ha + TSP 150 kg/Ha + KCl 100 kg/Ha secara bertahap.', urgency: 'within_24h' },
     { phase: 'monitoring', label: 'Uji tanah ulang', detail: 'Lakukan uji tanah setelah 3 minggu untuk memastikan perbaikan pH dan NPK.', urgency: 'routine' },
