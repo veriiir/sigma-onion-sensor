@@ -8,8 +8,9 @@ import {
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
-import { SensorReading, AIAnalysisRecord } from '../types';
+import { SensorReading, AIAnalysisRecord, Land } from '../types';
 import { SENSOR_CONFIGS } from '../constants/sensors';
+import { useLands } from '../hooks/useLands';
 
 type TabType = 'sensor' | 'ai';
 
@@ -52,7 +53,7 @@ const severityCfg = {
   none: { label: 'Sehat', color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/20', dot: 'bg-primary', icon: <CheckCircle className="w-4 h-4" /> },
 };
 
-function SensorDetailModal({ record, onClose }: { record: SensorReading; onClose: () => void }) {
+function SensorDetailModal({ record, onClose, lands }: { record: SensorReading; onClose: () => void; lands: Land[] }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <motion.div
@@ -87,7 +88,9 @@ function SensorDetailModal({ record, onClose }: { record: SensorReading; onClose
         <div className="px-6 py-2 bg-gray-50 border-b border-gray-100 shrink-0">
           <div className="flex gap-4 text-xs text-gray-500">
             <span>Jenis Mode: <span className="font-medium text-gray-700 capitalize">{record.system_type}</span></span>
-            <span>Nama Lahan: <span className="font-medium text-gray-700 capitalize">{record.land_id ?? 'Tidak Ada'}</span></span>
+            <span>Nama Lahan: <span className="font-medium text-gray-700 capitalize">
+              {lands.find(l => l.id === record.land_id)?.label ?? record.land_id ?? 'Tidak Ada'}
+            </span></span>
           </div>
         </div>
 
@@ -126,7 +129,7 @@ function SensorDetailModal({ record, onClose }: { record: SensorReading; onClose
   );
 }
 
-function AIDetailModal({ record, onClose }: { record: AIAnalysisRecord; onClose: () => void }) {
+function AIDetailModal({ record, onClose, lands }: { record: AIAnalysisRecord; onClose: () => void; lands: Land[] }) {
   const severity = DISEASE_SEVERITY[record.disease_name] ?? 'none';
   const sev = severityCfg[severity];
 
@@ -197,7 +200,7 @@ function AIDetailModal({ record, onClose }: { record: AIAnalysisRecord; onClose:
           <div className="grid grid-cols-2 gap-2 text-xs">
             {[
               { label: 'Jenis Mode', value: record.system_type },
-              { label: 'Nama Lahan', value: record.land_id },
+              { label: 'Nama Lahan', value: lands.find(l => l.id === record.land_id)?.label ?? record.land_id },
               { label: 'Bbox X', value: record.bbox_x?.toFixed(3) ?? '—' },
               { label: 'Bbox Y', value: record.bbox_y?.toFixed(3) ?? '—' },
               { label: 'Lebar', value: record.bbox_width?.toFixed(3) ?? '—' },
@@ -219,6 +222,7 @@ function AIDetailModal({ record, onClose }: { record: AIAnalysisRecord; onClose:
 export default function HistoryPage() {
   const { user } = useAuth();
   const { activeMode } = useApp();
+  const { lands } = useLands();
   const [tab, setTab] = useState<TabType>('sensor');
   const [historyViewMode, setHistoryViewMode] = useState(activeMode); // New state for history mode
 
@@ -435,7 +439,9 @@ export default function HistoryPage() {
                       className="group hover:bg-primary/5 cursor-pointer transition-all duration-300"
                     >
                       <td className="px-6 py-4 text-[11px] font-mono text-gray-500 font-bold tracking-tight whitespace-nowrap">{formatDate(row.created_at!)}</td>
-                            <td className="px-3 py-4 text-[10px] font-black capitalize text-center text-primary/70">{row.land_id ?? 'Tidak Ada'}</td>
+                            <td className="px-3 py-4 text-[10px] font-black capitalize text-center text-primary/70">
+                              {lands.find(l => l.id === row.land_id)?.label ?? row.land_id ?? 'Tidak Ada'}
+                            </td>
                       {SENSOR_CONFIGS.map(c => {
                         const val = row[c.key] as number;
                         const isGood = val >= c.goodMin && val <= c.goodMax;
@@ -489,7 +495,9 @@ export default function HistoryPage() {
                       <div className="flex items-center gap-3 mt-1">
                         <p className="text-xs text-gray-400">{row.created_at ? formatDate(row.created_at) : '—'}</p>
                         <span className="text-gray-300">·</span>
-                        <p className="text-xs text-gray-400 capitalize">{row.land_id}</p>
+                        <p className="text-xs text-gray-400 capitalize font-medium">
+                          {lands.find(l => l.id === row.land_id)?.label ?? row.land_id}
+                        </p>
                       </div>
                     </div>
                     <div className="shrink-0 text-right">
@@ -507,10 +515,10 @@ export default function HistoryPage() {
 
       <AnimatePresence>
         {selectedSensor && (
-          <SensorDetailModal record={selectedSensor} onClose={() => setSelectedSensor(null)} />
+          <SensorDetailModal record={selectedSensor} onClose={() => setSelectedSensor(null)} lands={lands} />
         )}
         {selectedAI && (
-          <AIDetailModal record={selectedAI} onClose={() => setSelectedAI(null)} />
+          <AIDetailModal record={selectedAI} onClose={() => setSelectedAI(null)} lands={lands} />
         )}
       </AnimatePresence>
     </div>
