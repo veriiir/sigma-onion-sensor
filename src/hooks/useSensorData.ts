@@ -95,7 +95,7 @@ export function useSensorData(systemType: SystemType, landId: LandId) {
           push({
             type: 'info',
             title: 'Belum Ada Data Alat',
-            message: 'Dashboard menampilkan data demo sampai alat mengirim data ke Supabase.',
+            message: 'Dashboard menampilkan data demo sampai alat mengirim data ke Database.',
             duration: 6000,
           });
         }
@@ -115,7 +115,7 @@ export function useSensorData(systemType: SystemType, landId: LandId) {
         push({
           type: 'success',
           title: 'Data Terbaru Dimuat',
-          message: 'Pembacaan sensor terakhir berhasil diambil dari Supabase.',
+          message: 'Pembacaan sensor terakhir berhasil diambil dari Database.',
         });
       }
     } catch (error) {
@@ -124,7 +124,7 @@ export function useSensorData(systemType: SystemType, landId: LandId) {
         push({
           type: 'error',
           title: 'Gagal Memuat Sensor',
-          message: 'Periksa koneksi Supabase atau endpoint alat.',
+          message: 'Periksa koneksi Database atau endpoint alat.',
           duration: 6000,
         });
       }
