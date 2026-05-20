@@ -48,7 +48,8 @@ async function fetchLatestReading(
   const { data, error } = await supabase
     .from('sensor_readings')
     .select('*')
-    .eq('user_id', userId)
+    // Komen atau hapus baris user_id ini sementara untuk testing:
+    // .eq('user_id', userId) 
     .eq('system_type', systemType)
     .eq('land_id', landId)
     .order('created_at', { ascending: false })
