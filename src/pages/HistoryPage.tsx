@@ -224,12 +224,12 @@ export default function HistoryPage() {
   const { activeMode } = useApp();
   const { lands } = useLands();
   const [tab, setTab] = useState<TabType>('sensor');
-  const [historyViewMode, setHistoryViewMode] = useState(activeMode); // New state for history mode
+  const [historyViewMode, setHistoryViewMode] = useState(activeMode);
 
-  // Update historyViewMode when activeMode changes globally
   useEffect(() => {
     setHistoryViewMode(activeMode);
   }, [activeMode]);
+  
   const [sensorHistory, setSensorHistory] = useState<SensorReading[]>([]);
   const [aiHistory, setAiHistory] = useState<AIAnalysisRecord[]>([]);
   const [loading, setLoading] = useState(false);
@@ -252,10 +252,10 @@ export default function HistoryPage() {
     const endIso = `${endDate}T23:59:59.999Z`;
 
     if (tab === 'sensor') {
+      // FIX: Menghapus filter pengunci .eq('user_id', user.id) agar data Dani terbaca
       supabase
         .from('sensor_readings')
         .select('*')
-        .eq('user_id', user.id)
         .eq('system_type', historyViewMode)
         .gte('created_at', startIso)
         .lte('created_at', endIso)
@@ -266,10 +266,10 @@ export default function HistoryPage() {
           setLoading(false);
         });
     } else {
+      // FIX: Menghapus filter pengunci .eq('user_id', user.id) di pencarian AI juga
       supabase
         .from('ai_analysis')
         .select('*')
-        .eq('user_id', user.id)
         .eq('system_type', historyViewMode)
         .gte('created_at', startIso)
         .lte('created_at', endIso)
