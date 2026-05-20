@@ -23,7 +23,7 @@ function toDate(value?: string) {
   return Number.isNaN(date.getTime()) ? new Date() : date;
 }
 
-// FIX: Mengambil 1 data paling baru secara global dari database tanpa filter pengunci
+// FIX: Mengambil 1 data paling baru secara global dari database tanpa filter land_id/user_id
 async function fetchLatestReading(): Promise<SensorReading | null> {
   const { data, error } = await supabase
     .from('sensor_readings')
@@ -40,7 +40,7 @@ export function useSensorData(systemType: SystemType, landId: LandId) {
   const { user } = useAuth();
   const { push } = useNotification();
   
-  // FIX: Nilai default awal diset ke 0 (Bukan data dummy acak lagi)
+  // FIX: Mengunci nilai default awal pada angka 0 (Bukan data dummy acak)
   const [sensorData, setSensorData] = useState<SensorReading>({
     system_type: systemType,
     land_id: landId,
@@ -57,8 +57,8 @@ export function useSensorData(systemType: SystemType, landId: LandId) {
   const [nextUpdateIn, setNextUpdateIn] = useState(systemType === 'panel' ? PANEL_REFRESH_INTERVAL : PORTABLE_REFRESH_INTERVAL);
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [loading, setLoading] = useState(false);
-  const [isDemoData, setIsDemoData] = useState(false); // Paksa selalu false
-  
+  const [isDemoData, setIsDemoData] = useState(false); // Dipaksa selalu false agar tidak lari ke dummy
+
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -69,8 +69,22 @@ export function useSensorData(systemType: SystemType, landId: LandId) {
     try {
       const latest = await fetchLatestReading();
 
+      // FIX PEMUTUS DUMMY ACAK: Jika DB kosong / koneksi Vercel putus, kunci di angka 0 dan pH 7
       if (!latest) {
-        console.log("Database masih kosong atau tidak mengembalikan data.");
+        console.log("Database kosong atau gagal memuat data asli. Memaksa state ke angka 0.");
+        setSensorData({
+          system_type: systemType,
+          land_id: landId,
+          moisture: 0,
+          nitrogen: 0,
+          phosphorus: 0,
+          potassium: 0,
+          temperature: 0,
+          ph: 7.0, 
+          conductivity: 0,
+          created_at: undefined // Menandakan tidak ada timestamp dari DB
+        });
+        setIsDemoData(false);
         return;
       }
 
@@ -95,17 +109,17 @@ export function useSensorData(systemType: SystemType, landId: LandId) {
       setLoading(false);
       setNextUpdateIn(systemType === 'panel' ? PANEL_REFRESH_INTERVAL : PORTABLE_REFRESH_INTERVAL);
     }
-  }, [user, systemType, push]);
+  }, [user, systemType, landId, push]);
 
   useEffect(() => {
     refreshSensorData(false);
   }, [refreshSensorData]);
 
-  // FIX: Realtime Listener Global Tanpa Filter Kolom land_id
+  // FIX: Realtime Listener Global Tanpa Filter Kolom land_id agar transmisi Dani terbaca instan
   useEffect(() => {
     if (!user) return;
 
-    console.log(`[REALTIME] Mengaktifkan listener global untuk tabel sensor_readings.`);
+    console.log(`[REALTIME] Mengaktifkan listener global tanpa filter untuk memantau data transmisi terbaru.`);
 
     const channel = supabase
       .channel('sensor-readings-global-realtime')
@@ -118,7 +132,7 @@ export function useSensorData(systemType: SystemType, landId: LandId) {
         },
         (payload) => {
           const newReading = payload.new as SensorReading;
-          console.log("Sukses! Transmisi data sensor baru masuk ke database:", newReading);
+          console.log("Sukses! Ada transmisi data sensor baru masuk ke database:", newReading);
           
           setSensorData(newReading);
           setLastUpdated(toDate(newReading.created_at));
@@ -138,7 +152,7 @@ export function useSensorData(systemType: SystemType, landId: LandId) {
       )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          console.log('[REALTIME] Jalur global ke tabel sensor_readings aktif.');
+          console.log('[REALTIME] Jalur global untuk tabel sensor_readings aktif.');
         }
       });
 
