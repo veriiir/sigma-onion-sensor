@@ -15,6 +15,8 @@ export default function OnionRealtimeDashboard({
   targetDeviceId = "onion-field-panel-01",
   landId = "lahan1" 
 }: OnionRealtimeDashboardProps) {
+  
+  // FIX: Mengunci inisialisasi awal pada angka 0 (Bukan data random)
   const [sensorData, setSensorData] = useState<SensorReading>({
     system_type: 'panel',
     land_id: landId,
@@ -33,73 +35,71 @@ export default function OnionRealtimeDashboard({
   const [isLive, setIsLive] = useState(false);
   const [pulseEffect, setPulseEffect] = useState(false);
 
- // 1. Fungsi fetch data awal global tanpa filter lahan
-const fetchLatestData = async () => {
-  try {
-    setLoading(true);
-    const { data, error: dbError } = await supabase
-      .from('sensor_readings')
-      .select('*')
-      // FILTER .eq('land_id') DIHAPUS
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+  // FIX: Tarik 1 baris teratas data paling teranyar secara global bebas filter
+  const fetchLatestData = async () => {
+    try {
+      setLoading(true);
+      const { data, error: dbError } = await supabase
+        .from('sensor_readings')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-    if (dbError) throw dbError;
-    if (data) {
-      setSensorData(data);
+      if (dbError) throw dbError;
+      if (data) {
+        setSensorData(data);
+      }
+      setError(null);
+    } catch (err: any) {
+      console.error("Gagal mengambil data sensor global:", err.message);
+      setError("Gagal memuat data terbaru dari database.");
+    } finally {
+      setLoading(false);
     }
-    setError(null);
-  } catch (err: any) {
-    console.error("Gagal mengambil data sensor awal:", err.message);
-    setError("Gagal memuat data dari database.");
-  } finally {
-    setLoading(false);
-  }
-};
-
-// 2. Jalur Realtime Listener Global di UI Komponen
-useEffect(() => {
-  fetchLatestData();
-
-  const channel = supabase
-    .channel('sensor-readings-direct-global')
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'sensor_readings'
-        // TANPA FILTER STRICK DI SINI
-      },
-      (payload) => {
-        const newReading = payload.new as SensorReading;
-        console.log("Dashboard mendeteksi data baru masuk di database:", newReading);
-        
-        // Langsung timpa data lama dengan data paling baru yang masuk
-        setSensorData(newReading);
-        
-        setPulseEffect(true);
-        setTimeout(() => setPulseEffect(false), 1500);
-      }
-    )
-    .subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
-        setIsLive(true);
-        console.log("Koneksi Realtime Global Aktif!");
-      } else {
-        setIsLive(false);
-      }
-    });
-
-  return () => {
-    supabase.removeChannel(channel);
   };
-}, []); // Dependency array dikosongkan karena tidak terikat landId lagi
 
-  // Evaluasi indikator kelayakan tanah bawang merah (pH ideal: 5.5 - 7.0, kelembapan ideal: >40%)
+  // FIX: Pasang koneksi broadcast realtime secara global tanpa mengunci filter string
+  useEffect(() => {
+    fetchLatestData();
+
+    console.log("[DASHBOARD] Membuka koneksi Realtime Global untuk tabel sensor_readings...");
+
+    const channel = supabase
+      .channel('sensor-readings-direct-global')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'sensor_readings'
+        },
+        (payload) => {
+          const newReading = payload.new as SensorReading;
+          console.log("Dashboard mendeteksi data baru masuk secara global:", newReading);
+          
+          setSensorData(newReading);
+          
+          setPulseEffect(true);
+          setTimeout(() => setPulseEffect(false), 1500);
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          setIsLive(true);
+          console.log("Dashboard sukses terhubung ke broadcast Realtime Supabase!");
+        } else {
+          setIsLive(false);
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const getSoilStatus = () => {
-    if (sensorData.nitrogen === 0 && sensorData.phosphorus === 0 && !sensorData.created_at) {
+    if (!sensorData.created_at) {
       return { text: "Menunggu Transmisi Data Pertama dari Alat Lapangan...", color: "text-gray-600 bg-gray-50 border-gray-200" };
     }
     if (sensorData.ph < 5.5) return { text: "Kadar Asam Tinggi (Butuh Kapur Dolomit)", color: "text-red-600 bg-red-50 border-red-200 animate-pulse" };
@@ -138,11 +138,11 @@ useEffect(() => {
             )}
           </div>
           <p className="text-xs text-gray-500 mt-1 flex items-center gap-1.5">
-            <Smartphone className="w-3.5 h-3.5" /> Lahan: <span className="font-semibold text-emerald-600 font-mono">{landId}</span>
-            {targetDeviceId && (
+            <Smartphone className="w-3.5 h-3.5" /> Sumber Database: <span className="font-semibold text-emerald-600 font-mono">sensor_readings (Global)</span>
+            {sensorData.land_id && (
               <>
                 <span className="text-gray-300">|</span>
-                <span>Device ID: <span className="font-semibold text-emerald-700 font-mono">{targetDeviceId}</span></span>
+                <span>Lahan Terdeteksi: <span className="font-semibold text-amber-700 font-mono">{sensorData.land_id}</span></span>
               </>
             )}
           </p>
@@ -151,7 +151,7 @@ useEffect(() => {
         <div className="flex items-center gap-2">
           {sensorData.created_at && (
             <span className="text-xs text-gray-400 font-medium">
-              Update Terakhir: {new Date(sensorData.created_at).toLocaleTimeString('id-ID')}
+              Transmisi Alat: {new Date(sensorData.created_at).toLocaleTimeString('id-ID')}
             </span>
           )}
           <button 
@@ -259,7 +259,7 @@ useEffect(() => {
           </div>
 
           <div className="text-[9px] text-gray-400 font-semibold italic">
-            * Parameter tanah di-broadcast instan menggunakan Supabase Realtime Channel
+            * Parameter tanah di-broadcast instan menggunakan Supabase Realtime Channel secara global.
           </div>
         </div>
 

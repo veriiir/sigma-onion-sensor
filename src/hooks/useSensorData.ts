@@ -7,23 +7,6 @@ import { useNotification } from '../contexts/NotificationContext';
 const PANEL_REFRESH_INTERVAL = 10 * 1000;
 const PORTABLE_REFRESH_INTERVAL = 0;
 
-function generateDemoSensorData(systemType: SystemType, landId: LandId): SensorReading {
-  const variance = systemType === 'portable' ? 1.0 : 0.5;
-  const offset = landId === 'lahan2' ? 5 : landId === 'lahan3' ? 10 : 0;
-  return {
-    system_type: systemType,
-    land_id: landId,
-    moisture: parseFloat((40 + offset * 0.5 + Math.random() * 30 * variance).toFixed(1)),
-    nitrogen: parseFloat((20 + offset * 0.8 + Math.random() * 30 * variance).toFixed(1)),
-    phosphorus: parseFloat((10 + offset * 0.3 + Math.random() * 18 * variance).toFixed(1)),
-    potassium: parseFloat((80 + offset * 2 + Math.random() * 100 * variance).toFixed(1)),
-    temperature: parseFloat((24 + offset * 0.2 + Math.random() * 8 * variance).toFixed(1)),
-    ph: parseFloat((5.8 + offset * 0.05 + Math.random() * 1.2 * variance).toFixed(2)),
-    conductivity: parseFloat((0.6 + offset * 0.05 + Math.random() * 1.8 * variance).toFixed(3)),
-    created_at: new Date().toISOString(),
-  };
-}
-
 function checkCritical(data: SensorReading) {
   const msgs: string[] = [];
   if (data.ph < 5.0) msgs.push(`pH sangat rendah: ${data.ph}`);
@@ -40,20 +23,13 @@ function toDate(value?: string) {
   return Number.isNaN(date.getTime()) ? new Date() : date;
 }
 
-async function fetchLatestReading(
-  userId: string, // Tetap biarkan parameter ini jika dipakai tipe data lain
-  systemType: SystemType,
-  landId: LandId,
-): Promise<SensorReading | null> {
+// FIX: Mengambil 1 data paling baru secara global dari database tanpa filter pengunci
+async function fetchLatestReading(): Promise<SensorReading | null> {
   const { data, error } = await supabase
     .from('sensor_readings')
     .select('*')
-    // HAPUS atau KOMEN BARIS USER_ID DI BAWAH INI:
-    // .eq('user_id', userId) 
-    //.eq('system_type', systemType)
-    //.eq('land_id', landId)
-    .order('created_at', { ascending: false }) // Mengurutkan dari yang paling baru
-    .limit(1) // Hanya ambil 1 data teranyar
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (error) throw error;
@@ -63,47 +39,41 @@ async function fetchLatestReading(
 export function useSensorData(systemType: SystemType, landId: LandId) {
   const { user } = useAuth();
   const { push } = useNotification();
-  const [sensorData, setSensorData] = useState<SensorReading>(() => generateDemoSensorData(systemType, landId));
+  
+  // FIX: Nilai default awal diset ke 0 (Bukan data dummy acak lagi)
+  const [sensorData, setSensorData] = useState<SensorReading>({
+    system_type: systemType,
+    land_id: landId,
+    moisture: 0,
+    nitrogen: 0,
+    phosphorus: 0,
+    potassium: 0,
+    temperature: 0,
+    ph: 7.0,
+    conductivity: 0,
+    created_at: new Date().toISOString(),
+  });
+  
   const [nextUpdateIn, setNextUpdateIn] = useState(systemType === 'panel' ? PANEL_REFRESH_INTERVAL : PORTABLE_REFRESH_INTERVAL);
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [loading, setLoading] = useState(false);
-  const [isDemoData, setIsDemoData] = useState(true);
+  const [isDemoData, setIsDemoData] = useState(false); // Paksa selalu false
+  
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const warningShownRef = useRef(false);
 
   const refreshSensorData = useCallback(async (showFeedback = false) => {
-    if (!user) {
-      const demo = generateDemoSensorData(systemType, landId);
-      setSensorData(demo);
-      setLastUpdated(toDate(demo.created_at));
-      setIsDemoData(true);
-      return;
-    }
+    if (!user) return;
 
     setLoading(true);
     try {
-      const latest = await fetchLatestReading(user.id, systemType, landId);
+      const latest = await fetchLatestReading();
 
       if (!latest) {
-        const demo = generateDemoSensorData(systemType, landId);
-        setSensorData(demo);
-        setLastUpdated(toDate(demo.created_at));
-        setIsDemoData(true);
-
-        if (showFeedback || !warningShownRef.current) {
-          warningShownRef.current = true;
-          push({
-            type: 'info',
-            title: 'Belum Ada Data Alat',
-            message: 'Dashboard menampilkan data demo sampai alat mengirim data ke Database.',
-            duration: 6000,
-          });
-        }
+        console.log("Database masih kosong atau tidak mengembalikan data.");
         return;
       }
 
-      warningShownRef.current = false;
       setSensorData(latest);
       setLastUpdated(toDate(latest.created_at));
       setIsDemoData(false);
@@ -121,73 +91,61 @@ export function useSensorData(systemType: SystemType, landId: LandId) {
       }
     } catch (error) {
       console.error('Failed to fetch latest sensor reading:', error);
-      if (showFeedback) {
-        push({
-          type: 'error',
-          title: 'Gagal Memuat Sensor',
-          message: 'Periksa koneksi Database atau endpoint alat.',
-          duration: 6000,
-        });
-      }
     } finally {
       setLoading(false);
       setNextUpdateIn(systemType === 'panel' ? PANEL_REFRESH_INTERVAL : PORTABLE_REFRESH_INTERVAL);
     }
-  }, [user, systemType, landId, push]);
+  }, [user, systemType, push]);
 
   useEffect(() => {
     refreshSensorData(false);
   }, [refreshSensorData]);
 
-// 2. Di dalam export function useSensorData, ubah useEffect Realtime-nya menjadi seperti ini:
-useEffect(() => {
-  if (!user) return;
+  // FIX: Realtime Listener Global Tanpa Filter Kolom land_id
+  useEffect(() => {
+    if (!user) return;
 
-  console.log(`[REALTIME] Mengaktifkan listener global tanpa filter untuk semua data masuk.`);
+    console.log(`[REALTIME] Mengaktifkan listener global untuk tabel sensor_readings.`);
 
-  const channel = supabase
-    .channel('sensor-readings-global-realtime')
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'sensor_readings'
-        // FILTER land_id DIHAPUS TOTAL DI SINI
-      },
-      (payload) => {
-        const newReading = payload.new as SensorReading;
-        console.log("Sukses! Ada data sensor baru masuk ke database:", newReading);
-        
-        // Langsung pasang ke layar tanpa validasi kecocokan lahan lagi
-        setSensorData(newReading);
-        setLastUpdated(toDate(newReading.created_at));
-        setIsDemoData(false);
+    const channel = supabase
+      .channel('sensor-readings-global-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'sensor_readings'
+        },
+        (payload) => {
+          const newReading = payload.new as SensorReading;
+          console.log("Sukses! Transmisi data sensor baru masuk ke database:", newReading);
+          
+          setSensorData(newReading);
+          setLastUpdated(toDate(newReading.created_at));
+          setIsDemoData(false);
 
-        // Jalankan deteksi nilai kritis
-        checkCritical(newReading).forEach(msg =>
-          push({ type: 'error', title: 'Nilai Sensor Kritis!', message: msg, duration: 8000 })
-        );
+          checkCritical(newReading).forEach(msg =>
+            push({ type: 'error', title: 'Nilai Sensor Kritis!', message: msg, duration: 8000 })
+          );
 
-        // Notifikasi data live masuk
-        push({
-          type: 'success',
-          title: 'Data Baru Terdeteksi!',
-          message: `Kondisi sensor berhasil diperbarui dari database secara live.`,
-          duration: 4000
-        });
-      }
-    )
-    .subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
-        console.log('[REALTIME] Terkoneksi secara global ke tabel sensor_readings.');
-      }
-    });
+          push({
+            type: 'success',
+            title: 'Data Baru Terdeteksi!',
+            message: 'Kondisi sensor diperbarui dari database secara live.',
+            duration: 4000
+          });
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('[REALTIME] Jalur global ke tabel sensor_readings aktif.');
+        }
+      });
 
-  return () => {
-    supabase.removeChannel(channel);
-  };
-}, [user, push]); // Hapus systemType dan landId dari dependency array
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, push]);
 
   useEffect(() => {
     if (timerRef.current) clearInterval(timerRef.current);
