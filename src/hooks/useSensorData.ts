@@ -41,19 +41,19 @@ function toDate(value?: string) {
 }
 
 async function fetchLatestReading(
-  userId: string,
+  userId: string, // Tetap biarkan parameter ini jika dipakai tipe data lain
   systemType: SystemType,
   landId: LandId,
 ): Promise<SensorReading | null> {
   const { data, error } = await supabase
     .from('sensor_readings')
     .select('*')
-    // Komen atau hapus baris user_id ini sementara untuk testing:
+    // HAPUS atau KOMEN BARIS USER_ID DI BAWAH INI:
     // .eq('user_id', userId) 
-    .eq('system_type', systemType)
-    .eq('land_id', landId)
-    .order('created_at', { ascending: false })
-    .limit(1)
+    //.eq('system_type', systemType)
+    //.eq('land_id', landId)
+    .order('created_at', { ascending: false }) // Mengurutkan dari yang paling baru
+    .limit(1) // Hanya ambil 1 data teranyar
     .maybeSingle();
 
   if (error) throw error;
@@ -139,64 +139,55 @@ export function useSensorData(systemType: SystemType, landId: LandId) {
     refreshSensorData(false);
   }, [refreshSensorData]);
 
-  // FIX & UPDATE: Supabase Realtime Listener yang sudah distabilkan
-  useEffect(() => {
-    if (!user) return;
+// 2. Di dalam export function useSensorData, ubah useEffect Realtime-nya menjadi seperti ini:
+useEffect(() => {
+  if (!user) return;
 
-    console.log(`Mengaktifkan Realtime listener untuk Lahan: ${landId}, Mode: ${systemType}`);
+  console.log(`[REALTIME] Mengaktifkan listener global tanpa filter untuk semua data masuk.`);
 
-    const channel = supabase
-      .channel(`sensor-readings-realtime-${systemType}-${landId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'sensor_readings',
-          // Perbaikan: Gunakan filter land_id karena berupa string pendek/enum yang didukung penuh oleh Realtime Supabase
-          filter: `land_id=eq.${landId}` 
-        },
-        (payload) => {
-          const newReading = payload.new as SensorReading;
-          
-          // Validasi keamanan lapis kedua di sisi JavaScript (Memastikan user_id dan system_type cocok)
-          if (
-            newReading.system_type === systemType && 
-            newReading.land_id === landId && 
-            (!newReading.user_id || newReading.user_id === user.id)
-          ) {
-            console.log("Sukses! Data sensor masuk dari lapangan secara live:", newReading);
-            setSensorData(newReading);
-            setLastUpdated(toDate(newReading.created_at));
-            setIsDemoData(false);
+  const channel = supabase
+    .channel('sensor-readings-global-realtime')
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'sensor_readings'
+        // FILTER land_id DIHAPUS TOTAL DI SINI
+      },
+      (payload) => {
+        const newReading = payload.new as SensorReading;
+        console.log("Sukses! Ada data sensor baru masuk ke database:", newReading);
+        
+        // Langsung pasang ke layar tanpa validasi kecocokan lahan lagi
+        setSensorData(newReading);
+        setLastUpdated(toDate(newReading.created_at));
+        setIsDemoData(false);
 
-            // Jalankan deteksi nilai kritis
-            checkCritical(newReading).forEach(msg =>
-              push({ type: 'error', title: 'Nilai Sensor Kritis!', message: msg, duration: 8000 })
-            );
+        // Jalankan deteksi nilai kritis
+        checkCritical(newReading).forEach(msg =>
+          push({ type: 'error', title: 'Nilai Sensor Kritis!', message: msg, duration: 8000 })
+        );
 
-            // Trigger alert pemberitahuan data live masuk
-            push({
-              type: 'success',
-              title: 'Data Alat Diterima!',
-              message: 'Kondisi lahan bawang merah diperbarui secara live dari alat.',
-              duration: 4000
-            });
-          }
-        }
-      )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log(`[REALTIME] Berhasil terkoneksi ke tabel sensor_readings untuk lahan: ${landId}`);
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('[REALTIME] Gagal subscribe. Pastikan Replication Realtime di dashboard Supabase sudah diaktifkan.');
-        }
-      });
+        // Notifikasi data live masuk
+        push({
+          type: 'success',
+          title: 'Data Baru Terdeteksi!',
+          message: `Kondisi sensor berhasil diperbarui dari database secara live.`,
+          duration: 4000
+        });
+      }
+    )
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('[REALTIME] Terkoneksi secara global ke tabel sensor_readings.');
+      }
+    });
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, systemType, landId, push]);
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, [user, push]); // Hapus systemType dan landId dari dependency array
 
   useEffect(() => {
     if (timerRef.current) clearInterval(timerRef.current);

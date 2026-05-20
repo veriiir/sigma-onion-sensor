@@ -33,77 +33,69 @@ export default function OnionRealtimeDashboard({
   const [isLive, setIsLive] = useState(false);
   const [pulseEffect, setPulseEffect] = useState(false);
 
-  // 1. Mengambil data awal (Initial Fetch)
-  const fetchLatestData = async () => {
-    try {
-      setLoading(true);
-      const { data, error: dbError } = await supabase
-        .from('sensor_readings')
-        .select('*')
-        .eq('land_id', landId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+ // 1. Fungsi fetch data awal global tanpa filter lahan
+const fetchLatestData = async () => {
+  try {
+    setLoading(true);
+    const { data, error: dbError } = await supabase
+      .from('sensor_readings')
+      .select('*')
+      // FILTER .eq('land_id') DIHAPUS
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-      if (dbError) throw dbError;
-      if (data) {
-        setSensorData(data);
-      }
-      setError(null);
-    } catch (err: any) {
-      console.error("Gagal mengambil data sensor awal:", err.message);
-      setError("Gagal memuat data terakhir dari database.");
-    } finally {
-      setLoading(false);
+    if (dbError) throw dbError;
+    if (data) {
+      setSensorData(data);
     }
+    setError(null);
+  } catch (err: any) {
+    console.error("Gagal mengambil data sensor awal:", err.message);
+    setError("Gagal memuat data dari database.");
+  } finally {
+    setLoading(false);
+  }
+};
+
+// 2. Jalur Realtime Listener Global di UI Komponen
+useEffect(() => {
+  fetchLatestData();
+
+  const channel = supabase
+    .channel('sensor-readings-direct-global')
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'sensor_readings'
+        // TANPA FILTER STRICK DI SINI
+      },
+      (payload) => {
+        const newReading = payload.new as SensorReading;
+        console.log("Dashboard mendeteksi data baru masuk di database:", newReading);
+        
+        // Langsung timpa data lama dengan data paling baru yang masuk
+        setSensorData(newReading);
+        
+        setPulseEffect(true);
+        setTimeout(() => setPulseEffect(false), 1500);
+      }
+    )
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        setIsLive(true);
+        console.log("Koneksi Realtime Global Aktif!");
+      } else {
+        setIsLive(false);
+      }
+    });
+
+  return () => {
+    supabase.removeChannel(channel);
   };
-
-  // 2. Hubungkan ke Supabase Realtime Channel
-  useEffect(() => {
-    // Jalankan pengambilan data historis awal setiap kali landId berubah
-    fetchLatestData();
-
-    console.log(`[DASHBOARD] Membuka jalur Realtime untuk tabel sensor_readings di ${landId}`);
-
-    // Membuat realtime channel tanpa filter string ketat di postgres_changes untuk stabilitas broadcast
-    const channel = supabase
-      .channel(`sensor-readings-direct-${landId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'sensor_readings'
-        },
-        (payload) => {
-          const newReading = payload.new as SensorReading;
-          
-          // Validasi di sisi klien: Hanya update state jika land_id data baru COCOK dengan halaman yang sedang dibuka user
-          if (newReading.land_id === landId) {
-            console.log("Menerima data sensor baru secara Realtime:", newReading);
-            setSensorData(newReading);
-            
-            // Trigger efek visual pulsing kedip hijau ketika data baru masuk
-            setPulseEffect(true);
-            setTimeout(() => setPulseEffect(false), 1500);
-          }
-        }
-      )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          setIsLive(true);
-          console.log(`[DASHBOARD] Sukses Live Connect! Dashboard siap menerima transmisi alat.`);
-        } else {
-          setIsLive(false);
-        }
-      });
-
-    // Cleanup subscription saat komponen di-unmount atau ganti lahan
-    return () => {
-      console.log(`[DASHBOARD] Menutup jalur Realtime untuk ${landId}`);
-      supabase.removeChannel(channel);
-    };
-  }, [landId]);
+}, []); // Dependency array dikosongkan karena tidak terikat landId lagi
 
   // Evaluasi indikator kelayakan tanah bawang merah (pH ideal: 5.5 - 7.0, kelembapan ideal: >40%)
   const getSoilStatus = () => {
