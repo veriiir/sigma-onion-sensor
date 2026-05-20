@@ -60,9 +60,12 @@ export default function OnionRealtimeDashboard({
 
   // 2. Hubungkan ke Supabase Realtime Channel
   useEffect(() => {
+    // Jalankan pengambilan data historis awal setiap kali landId berubah
     fetchLatestData();
 
-    // Buat realtime channel untuk mendengarkan perubahan tabel sensor_readings secara live
+    console.log(`[DASHBOARD] Membuka jalur Realtime untuk tabel sensor_readings di ${landId}`);
+
+    // Membuat realtime channel tanpa filter string ketat di postgres_changes untuk stabilitas broadcast
     const channel = supabase
       .channel(`sensor-readings-direct-${landId}`)
       .on(
@@ -70,35 +73,43 @@ export default function OnionRealtimeDashboard({
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'sensor_readings',
-          filter: `land_id=eq.${landId}`
+          table: 'sensor_readings'
         },
         (payload) => {
-          console.log("Menerima data sensor baru secara Realtime:", payload.new);
-          setSensorData(payload.new as SensorReading);
+          const newReading = payload.new as SensorReading;
           
-          // Triger efek visual pulsing kedip hijau ketika data baru masuk
-          setPulseEffect(true);
-          setTimeout(() => setPulseEffect(false), 1500);
+          // Validasi di sisi klien: Hanya update state jika land_id data baru COCOK dengan halaman yang sedang dibuka user
+          if (newReading.land_id === landId) {
+            console.log("Menerima data sensor baru secara Realtime:", newReading);
+            setSensorData(newReading);
+            
+            // Trigger efek visual pulsing kedip hijau ketika data baru masuk
+            setPulseEffect(true);
+            setTimeout(() => setPulseEffect(false), 1500);
+          }
         }
       )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           setIsLive(true);
-          console.log("Berhasil subscribe ke Supabase Realtime!");
+          console.log(`[DASHBOARD] Sukses Live Connect! Dashboard siap menerima transmisi alat.`);
         } else {
           setIsLive(false);
         }
       });
 
-    // Cleanup subscription saat komponen di-unmount
+    // Cleanup subscription saat komponen di-unmount atau ganti lahan
     return () => {
+      console.log(`[DASHBOARD] Menutup jalur Realtime untuk ${landId}`);
       supabase.removeChannel(channel);
     };
   }, [landId]);
 
   // Evaluasi indikator kelayakan tanah bawang merah (pH ideal: 5.5 - 7.0, kelembapan ideal: >40%)
   const getSoilStatus = () => {
+    if (sensorData.nitrogen === 0 && sensorData.phosphorus === 0 && !sensorData.created_at) {
+      return { text: "Menunggu Transmisi Data Pertama dari Alat Lapangan...", color: "text-gray-600 bg-gray-50 border-gray-200" };
+    }
     if (sensorData.ph < 5.5) return { text: "Kadar Asam Tinggi (Butuh Kapur Dolomit)", color: "text-red-600 bg-red-50 border-red-200 animate-pulse" };
     if (sensorData.ph > 7.0) return { text: "Terlalu Basa (Butuh Pemupukan Sulfur/ZA)", color: "text-amber-600 bg-amber-50 border-amber-200" };
     if (sensorData.moisture < 40) return { text: "Tanah Kering (Perlu Penyiraman / Irigasi)", color: "text-blue-600 bg-blue-50 border-blue-200" };
@@ -110,7 +121,7 @@ export default function OnionRealtimeDashboard({
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[350px] bg-neutral-50 rounded-2xl border border-black/5 p-8">
-        <RefreshCw className="w-8 h-8 text-primary animate-spin mb-3" />
+        <RefreshCw className="w-8 h-8 text-emerald-600 animate-spin mb-3" />
         <p className="text-sm font-semibold text-gray-500 font-sans">Mengkoneksikan ke database...</p>
       </div>
     );
@@ -125,8 +136,8 @@ export default function OnionRealtimeDashboard({
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-black text-gray-800 tracking-tight">SIGMA REALTIME MONITOR</h1>
             {isLive ? (
-              <span className="flex items-center gap-1 text-[10px] font-extrabold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Live Connection
+              <span className="flex items-center gap-1 text-[10px] font-extrabold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" /> Live Connection
               </span>
             ) : (
               <span className="text-[10px] font-bold text-gray-400 bg-gray-100 border border-gray-200 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
@@ -135,7 +146,7 @@ export default function OnionRealtimeDashboard({
             )}
           </div>
           <p className="text-xs text-gray-500 mt-1 flex items-center gap-1.5">
-            <Smartphone className="w-3.5 h-3.5" /> Lahan: <span className="font-semibold text-primary font-mono">{landId}</span>
+            <Smartphone className="w-3.5 h-3.5" /> Lahan: <span className="font-semibold text-emerald-600 font-mono">{landId}</span>
             {targetDeviceId && (
               <>
                 <span className="text-gray-300">|</span>
@@ -169,7 +180,7 @@ export default function OnionRealtimeDashboard({
       )}
 
       {/* Indikator Status Kelayakan */}
-      <div className={`p-4 rounded-xl border flex items-center justify-between transition-all duration-500 ${status.color} ${pulseEffect ? 'ring-4 ring-emerald-400/30' : ''}`}>
+      <div className={`p-4 rounded-xl border flex items-center justify-between transition-all duration-500 ${status.color} ${pulseEffect ? 'ring-4 ring-emerald-400/50 border-emerald-400 bg-emerald-100/50' : ''}`}>
         <div className="flex items-center gap-3">
           <Activity className="w-5 h-5 shrink-0" />
           <div>
