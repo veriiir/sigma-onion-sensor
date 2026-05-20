@@ -138,6 +138,58 @@ export function useSensorData(systemType: SystemType, landId: LandId) {
     refreshSensorData(false);
   }, [refreshSensorData]);
 
+  // Supabase Realtime listener untuk update live otomatis dari ESP32
+  useEffect(() => {
+    if (!user) return;
+
+    console.log(`Mengaktifkan Realtime listener untuk Lahan: ${landId}, Mode: ${systemType}`);
+
+    const channel = supabase
+      .channel(`sensor-readings-realtime-${systemType}-${landId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'sensor_readings',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          const newReading = payload.new as SensorReading;
+          
+          // Validasi apakah data baru cocok dengan mode dan lahan yang sedang dibuka di UI
+          if (newReading.system_type === systemType && newReading.land_id === landId) {
+            console.log("Update sensor real-time diterima secara live!", newReading);
+            setSensorData(newReading);
+            setLastUpdated(toDate(newReading.created_at));
+            setIsDemoData(false);
+
+            // Periksa jika ada nilai sensor kritis untuk memunculkan peringatan
+            checkCritical(newReading).forEach(msg =>
+              push({ type: 'error', title: 'Nilai Sensor Kritis!', message: msg, duration: 8000 })
+            );
+
+            // Munculkan notifikasi sukses data baru masuk
+            push({
+              type: 'success',
+              title: 'Data Alat Diterima!',
+              message: 'Kondisi lahan bawang merah diperbarui secara live dari alat.',
+              duration: 4000
+            });
+          }
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log(`Subscribed ke realtime channel sensor_readings untuk lahan ${landId}`);
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, systemType, landId, push]);
+
   useEffect(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     if (countdownRef.current) clearInterval(countdownRef.current);
