@@ -33,7 +33,7 @@ function PageContent() {
 }
 
 function AppInner() {
-  const { user, loading } = useAuth();
+  const { user, loading, passwordRecovery } = useAuth();
 
   if (loading) {
     return (
@@ -78,7 +78,7 @@ function AppInner() {
     );
   }
 
-  if (!user) {
+  if (!user || passwordRecovery) {
     return <AuthPage />;
   }
 

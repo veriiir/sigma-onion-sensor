@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { SensorReading } from '../../types';
 import { 
@@ -12,7 +12,6 @@ interface OnionRealtimeDashboardProps {
 }
 
 export default function OnionRealtimeDashboard({ 
-  targetDeviceId = "onion-field-panel-01",
   landId = "lahan1" 
 }: OnionRealtimeDashboardProps) {
   
@@ -51,8 +50,9 @@ export default function OnionRealtimeDashboard({
         setSensorData(data);
       }
       setError(null);
-    } catch (err: any) {
-      console.error("Gagal mengambil data sensor global:", err.message);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      console.error("Gagal mengambil data sensor global:", message);
       setError("Gagal memuat data terbaru dari database.");
     } finally {
       setLoading(false);
