@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { SystemType } from '../types';
 
 export default function AuthPage() {
-  const { signIn, signUp, resetPassword } = useAuth();
+  const { signIn, signUp, resetPassword, updatePassword, passwordRecovery } = useAuth();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -24,6 +24,17 @@ export default function AuthPage() {
 
   const validateEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
+  function getResetPasswordMessage(message: string) {
+    const lowerMessage = message.toLowerCase();
+    if (lowerMessage.includes('rate limit') || lowerMessage.includes('security purposes')) {
+      return 'Terlalu banyak percobaan. Tunggu beberapa menit, lalu coba lagi.';
+    }
+    if (lowerMessage.includes('redirect')) {
+      return 'URL reset belum diizinkan di Supabase. Tambahkan alamat aplikasi ini di Auth Redirect URLs.';
+    }
+    return message || 'Gagal mengirim tautan reset kata sandi. Silakan coba lagi.';
+  }
+
   function openEmailApp() {
     if (typeof window !== 'undefined') window.location.href = 'mailto:';
   }
@@ -39,7 +50,7 @@ export default function AuthPage() {
 
     setLoading(true);
     const { error: err } = await resetPassword(resetEmail.trim());
-    if (err) setError('Gagal mengirim tautan reset kata sandi. Silakan coba lagi.');
+    if (err) setError(getResetPasswordMessage(err));
     else {
       setSuccess('Tautan reset kata sandi sudah dikirim. Silakan cek email Anda.');
       setShowForgotPassword(false);
@@ -51,6 +62,29 @@ export default function AuthPage() {
     e.preventDefault();
     setError('');
     setSuccess('');
+
+    if (passwordRecovery) {
+      if (password.length < 6) {
+        setError('Kata sandi baru minimal 6 karakter.');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError('Konfirmasi kata sandi baru tidak cocok.');
+        return;
+      }
+
+      setLoading(true);
+      const { error: err } = await updatePassword(password);
+      if (err) setError('Gagal memperbarui kata sandi. Link reset mungkin sudah kedaluwarsa.');
+      else {
+        setSuccess('Kata sandi berhasil diperbarui. Silakan masuk dengan kata sandi baru.');
+        setPassword('');
+        setConfirmPassword('');
+        setMode('login');
+      }
+      setLoading(false);
+      return;
+    }
 
     if (!validateEmail(email)) {
       setError('Format email tidak valid.');
@@ -187,6 +221,69 @@ export default function AuthPage() {
                 onSubmit={handleSubmit}
                 className="space-y-4"
               >
+                {passwordRecovery && (
+                  <>
+                    <div className="rounded-xl border border-primary/25 bg-primary/10 p-4">
+                      <p className="text-white text-sm font-semibold">Buat Kata Sandi Baru</p>
+                      <p className="text-white/70 text-xs mt-1">Masukkan kata sandi baru untuk akun Anda.</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-white/70 text-sm mb-1.5">Kata Sandi Baru</label>
+                      <div className="relative">
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          value={password}
+                          onChange={e => setPassword(e.target.value)}
+                          placeholder="Minimal 6 karakter"
+                          className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 pr-12 text-white placeholder-white/30 focus:outline-none focus:border-teal-400/60 focus:bg-white/15 transition-all text-sm"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-white/70 text-sm mb-1.5">Konfirmasi Kata Sandi Baru</label>
+                      <div className="relative">
+                        <input
+                          type={showConfirm ? 'text' : 'password'}
+                          value={confirmPassword}
+                          onChange={e => setConfirmPassword(e.target.value)}
+                          placeholder="Ulangi kata sandi baru"
+                          className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 pr-12 text-white placeholder-white/30 focus:outline-none focus:border-teal-400/60 focus:bg-white/15 transition-all text-sm"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirm(!showConfirm)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
+                        >
+                          {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full bg-primary hover:opacity-90 disabled:bg-primary/40 text-white font-semibold py-3.5 rounded-xl transition-all duration-200 text-sm shadow-lg shadow-primary/30 mt-2 flex items-center justify-center gap-2"
+                    >
+                      {loading ? (
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        'Simpan Kata Sandi'
+                      )}
+                    </button>
+                  </>
+                )}
+
+                {!passwordRecovery && (
+                  <>
                 {mode === 'register' && (
                   <div>
                     <label className="block text-white/70 text-sm mb-1.5">Nama Lengkap</label>
@@ -255,6 +352,12 @@ export default function AuthPage() {
                       type="email"
                       value={resetEmail}
                       onChange={e => setResetEmail(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleForgotPassword();
+                        }
+                      }}
                       placeholder="nama@email.com"
                       className="w-full mt-3 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-teal-400/60 focus:bg-white/15 transition-all text-sm"
                     />
@@ -375,6 +478,8 @@ export default function AuthPage() {
                     </p>
                   )}
                 </div>
+                  </>
+                )}
               </motion.form>
             </AnimatePresence>
           </div>
