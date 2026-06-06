@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { Settings, User, Smartphone, MonitorSpeaker, Bell, Shield, Info, Save, Check } from 'lucide-react';
+import { Settings, User, Bell, Shield, Info, Save, Check } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
-import { SystemType } from '../types';
 
 export default function SettingsPage() {
   const { profile, user, updateProfile } = useAuth();
-  const { activeMode, setActiveMode, notifEnabled, setNotifEnabled, autoSync, setAutoSync } = useApp();
+  const { activeMode, notifEnabled, setNotifEnabled, autoSync, setAutoSync } = useApp();
   const [fullName, setFullName] = useState(profile?.full_name ?? '');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -71,7 +70,7 @@ export default function SettingsPage() {
               type="text"
               value={fullName}
               onChange={e => setFullName(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 focus:outline-none focus:border-teal-400 transition-colors"
+              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 focus:outline-none focus:border-secondary transition-colors"
               placeholder="Nama lengkap Anda"
             />
           </div>
@@ -87,32 +86,7 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-        <h3 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
-          <Smartphone className="w-4 h-4 text-primary" />
-          Tipe Perangkat Utama
-        </h3>
-        <div className="grid grid-cols-2 gap-3">
-          {(['portable', 'panel'] as SystemType[]).map(type => (
-            <button
-              key={type}
-              onClick={() => setActiveMode(type)}
-              className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-200 ${
-                activeMode === type
-                  ? 'border-primary bg-primary/5 text-primary scale-105 shadow-primary/10'
-                  : 'border-gray-200 text-gray-500 hover:border-gray-300'
-              }`}
-            >
-              {type === 'portable' ? <Smartphone className="w-5 h-5" /> : <MonitorSpeaker className="w-5 h-5" />}
-              <div className="text-left">
-                <p className="text-sm font-semibold">{type === 'portable' ? 'Portable' : 'Panel Tetap'}</p>
-                <p className="text-xs opacity-70 mt-0.5">{type === 'portable' ? 'Sensor Genggam' : 'Stasiun Tetap'}</p>
-              </div>
-              {activeMode === type && <Check className="w-4 h-4 text-primary ml-auto" />}
-            </button>
-          ))}
-        </div>
-      </div>
+
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
         <h3 className="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">

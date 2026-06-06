@@ -10,7 +10,7 @@ import AIAnalysisPage from './pages/AIAnalysisPage';
 import HistoryPage from './pages/HistoryPage';
 import SettingsPage from './pages/SettingsPage';
 import MainLayout from './components/layout/MainLayout';
-// DISABLED: ToastContainer - Diganti dengan NotificationCenter di Header
+// DISABLED: ToastContainer - Diganti dengan NotificationCenter di Sidebar
 // import ToastContainer from './components/notifications/ToastContainer';
 
 function PageContent() {
@@ -40,14 +40,14 @@ function AppInner() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FBF9F4] flex items-center justify-center p-6 font-sans">
+      <div className="min-h-screen bg-neutral-surface flex items-center justify-center p-6 font-sans">
         <div className="flex flex-col items-center max-w-sm w-full text-center">
           
           {/* MASKOT DENGAN ANIMASI MENGAPUNG (Floating Animation) */}
           <motion.img
             src={maskot}
             alt="SIGMA Mascot"
-            className="w-48 h-48 md:w-56 md:h-56 object-contain mb-8 drop-shadow-2xl"
+            className="w-64 h-64 md:w-72 md:h-72 object-contain mb-8 drop-shadow-2xl"
             /* Efek animasi mascot bergerak naik turun perlahan */
             animate={{ y: [0, -15, 0] }}
             transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
@@ -91,7 +91,7 @@ function AppInner() {
         <MainLayout>
           <PageContent />
         </MainLayout>
-        {/* DISABLED: ToastContainer moved to NotificationCenter in Header */}
+        {/* DISABLED: ToastContainer moved to NotificationCenter in Sidebar */}
       </AppProvider>
     </NotificationProvider>
   );

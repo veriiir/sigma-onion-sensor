@@ -17,7 +17,7 @@ const pageLabels: Record<ActivePage, string> = {
 export default function Header() {
   const { activePage, setSidebarOpen, setActivePage } = useApp();
   const { user, signOut } = useAuth();
-  const { notifications, unreadCount } = useNotification();
+  const { unreadCount } = useNotification();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -34,33 +34,29 @@ export default function Header() {
   }, []);
 
   return (
-    /* REVISI: Mengubah bg-white menjadi Krem #FBF9F4 dan border ke transparan hitam sangat halus (black/5) 
-       agarHeader terlihat menyatu sempurna dengan latar belakang Dashboard */
-    <header className="h-16 bg-[#FBF9F4] border-b border-black/5 flex items-center px-4 lg:px-6 gap-4 sticky top-0 z-20">
+    <header className="h-16 bg-neutral-surface/95 backdrop-blur border-b border-primary/10 flex items-center px-4 lg:px-6 gap-4 sticky top-0 z-20">
       <button
         onClick={() => setSidebarOpen(true)}
-        /* REVISI: Ganti hover ke bg-black/5 (Warm Gray transparan) */
-        className="lg:hidden p-2 rounded-xl hover:bg-black/5 transition-colors text-gray-500"
+        className="lg:hidden p-2 rounded-xl hover:bg-primary/10 transition-colors text-tertiary"
       >
         <Menu className="w-5 h-5" />
       </button>
 
-      <div className="flex items-center gap-2 text-sm text-gray-500 flex-1 min-w-0 font-medium">
-        {/* REVISI: Mengubah text-teal-600 ke text-primary (Hijau Hutan Forest) */}
+      <div className="flex items-center gap-2 text-sm text-tertiary flex-1 min-w-0 font-medium">
         <span className="text-primary font-bold hidden sm:block tracking-tighter uppercase">SIGMA</span>
         <ChevronRight className="w-4 h-4 hidden sm:block opacity-30" />
-        <span className="text-gray-800 font-bold tracking-tighter truncate">{pageLabels[activePage]}</span>
+        <span className="text-primary font-bold tracking-tighter truncate">{pageLabels[activePage]}</span>
       </div>
 
       <div className="flex items-center gap-3">
         <div className="relative" ref={notificationRef}>
           <button
             onClick={() => setNotificationCenterOpen(!notificationCenterOpen)}
-            className="relative p-2 rounded-xl hover:bg-black/5 transition-colors text-gray-500 group"
+            className="relative p-2 rounded-xl hover:bg-primary/10 transition-colors text-tertiary group"
           >
             <Bell className="w-5 h-5 transition-transform group-hover:rotate-12" />
             {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 min-w-[16px] h-4 bg-red-600 rounded-full flex items-center justify-center border-2 border-[#FBF9F4]">
+              <span className="absolute top-1 right-1 min-w-[16px] h-4 bg-red-600 rounded-full flex items-center justify-center border-2 border-neutral-surface">
                 <span className="text-white text-[9px] font-black leading-none px-0.5">{unreadCount}</span>
               </span>
             )}
@@ -74,9 +70,8 @@ export default function Header() {
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-black/5 transition-all"
+            className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-primary/10 transition-all"
           >
-            {/* REVISI: Inisial profile ganti warna bg ke primary hijau forest */ }
             <div className="w-8 h-8 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/10">
               <span className="text-white text-xs font-black">{user?.email?.[0]?.toUpperCase() ?? 'U'}</span>
             </div>

@@ -10,12 +10,11 @@ const navigationCards = [
     description: 'Pantau data sensor IoT real-time dari lahan Anda',
     shortDesc: 'Data Real-Time',
     icon: Smartphone,
-    color: 'from-blue-500 via-cyan-500 to-teal-600',
-    accentColor: 'blue',
-    bgGradient: 'from-blue-50/50 to-cyan-50/50',
-    iconBg: 'bg-blue-100',
-    iconColor: 'text-blue-600',
-    stats: '24/7 Live',
+    color: 'from-accent-straken via-accent-rosemary to-secondary',
+    accentColor: 'straken',
+    bgGradient: 'from-neutral-surface/70 to-accent-rosemary/20',
+    iconBg: 'bg-accent-rosemary/20',
+    iconColor: 'text-accent-straken',
     mode: 'portable' as const,
   },
   {
@@ -24,12 +23,11 @@ const navigationCards = [
     description: 'Monitoring terpusat dari semua sensor IoT lahan',
     shortDesc: 'Data Real-Time',
     icon: MonitorSpeaker,
-    color: 'from-emerald-500 via-teal-500 to-cyan-600',
-    accentColor: 'emerald',
-    bgGradient: 'from-emerald-50/50 to-teal-50/50',
-    iconBg: 'bg-emerald-100',
-    iconColor: 'text-emerald-600',
-    stats: '24/7 Live',
+    color: 'from-secondary-light via-tertiary to-accent-straken',
+    accentColor: 'rosemary',
+    bgGradient: 'from-secondary-light/25 to-neutral-surface/70',
+    iconBg: 'bg-tertiary/15',
+    iconColor: 'text-tertiary',
     mode: 'panel' as const,
   },
   {
@@ -38,12 +36,11 @@ const navigationCards = [
     description: 'Deteksi penyakit tanaman menggunakan Machine Learning',
     shortDesc: 'AI Detection',
     icon: BrainCircuit,
-    color: 'from-purple-500 via-fuchsia-500 to-pink-600',
-    accentColor: 'purple',
-    bgGradient: 'from-purple-50/50 to-pink-50/50',
-    iconBg: 'bg-purple-100',
-    iconColor: 'text-purple-600',
-    stats: 'ML Powered',
+    color: 'from-accent-texture via-accent-viola to-accent-melrose',
+    accentColor: 'viola',
+    bgGradient: 'from-accent-melrose/25 to-neutral-surface/80',
+    iconBg: 'bg-accent-melrose/30',
+    iconColor: 'text-accent-texture',
   },
   {
     id: 'history',
@@ -51,12 +48,11 @@ const navigationCards = [
     description: 'Lihat riwayat hasil deteksi dan data monitoring',
     shortDesc: 'Historical Data',
     icon: BookOpen,
-    color: 'from-amber-500 via-orange-500 to-red-500',
-    accentColor: 'amber',
-    bgGradient: 'from-amber-50/50 to-orange-50/50',
-    iconBg: 'bg-amber-100',
-    iconColor: 'text-amber-600',
-    stats: 'Full History',
+    color: 'from-accent-rosemary via-accent-straken to-secondary',
+    accentColor: 'texture',
+    bgGradient: 'from-accent-rosemary/20 to-neutral-surface/80',
+    iconBg: 'bg-accent-rosemary/20',
+    iconColor: 'text-accent-straken',
   },
 ] as const;
 
@@ -77,7 +73,9 @@ export default function HomePage() {
     }
   };
 
-  const userName = profile?.full_name?.split(' ')[0] || 'Petani';
+  const hour = new Date().getHours();
+  const greeting = hour < 11 ? 'Selamat Pagi' : hour < 15 ? 'Selamat Siang' : hour < 19 ? 'Selamat Sore' : 'Selamat Malam';
+  const fullName = profile?.full_name?.trim() || 'Petani';
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -112,12 +110,12 @@ export default function HomePage() {
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-          className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-emerald-300/20 to-teal-300/20 rounded-full blur-3xl"
+          className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-accent-melrose/30 to-accent-viola/20 rounded-full blur-3xl"
         />
         <motion.div
           animate={{ rotate: -360 }}
           transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
-          className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-purple-300/20 to-pink-300/20 rounded-full blur-3xl"
+          className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-accent-rosemary/25 to-accent-straken/20 rounded-full blur-3xl"
         />
       </div>
 
@@ -129,12 +127,12 @@ export default function HomePage() {
           transition={{ duration: 0.8, type: 'spring', stiffness: 60 }}
           className="relative"
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-purple-500/10 to-orange-500/10 rounded-3xl blur-2xl" />
+          <div className="absolute inset-0 bg-gradient-to-r from-accent-straken/10 via-accent-viola/15 to-accent-melrose/20 rounded-3xl blur-2xl" />
           <div className="relative bg-white/30 backdrop-blur-xl rounded-3xl border border-white/20 p-10 shadow-2xl shadow-black/5">
             <motion.div
               animate={{ y: [0, -8, 0] }}
               transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute -top-8 -right-8 w-16 h-16 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full shadow-lg"
+              className="absolute -top-8 -right-8 w-16 h-16 bg-gradient-to-br from-accent-melrose to-accent-viola rounded-full shadow-lg"
             />
 
             <div className="space-y-4">
@@ -142,9 +140,9 @@ export default function HomePage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
-                className="text-sm font-bold uppercase tracking-[0.3em] text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600"
+                className="text-sm font-bold uppercase tracking-[0.3em] text-transparent bg-clip-text bg-gradient-to-r from-accent-straken to-accent-texture"
               >
-                🌿 Selamat Datang Kembali
+                🧑‍🌾 Pantau kondisi lahan hari ini
               </motion.p>
 
               <div className="space-y-2">
@@ -154,7 +152,7 @@ export default function HomePage() {
                   transition={{ delay: 0.4, duration: 0.6 }}
                   className="text-5xl lg:text-6xl font-black text-gray-900 tracking-tighter leading-tight"
                 >
-                  Halo, <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">{userName}</span>! 
+                  {greeting}, <span className="bg-gradient-to-r from-accent-straken to-accent-texture bg-clip-text text-transparent">{fullName}</span>! 
                 </motion.h1>
 
                 <motion.p
@@ -164,31 +162,11 @@ export default function HomePage() {
                   className="text-lg text-gray-600 max-w-2xl leading-relaxed font-medium"
                 >
                   Kelola lahan dengan presisi tinggi menggunakan teknologi{' '}
-                  <span className="font-bold text-emerald-700">IoT Terintegrasi</span> dan{' '}
-                  <span className="font-bold text-purple-700">AI Model</span> untuk hasil panen optimal.
+                  <span className="font-bold text-accent-straken">IoT Terintegrasi</span> dan{' '}
+                  <span className="font-bold text-accent-texture">AI Model</span> untuk hasil panen optimal.
                 </motion.p>
               </div>
 
-              {/* Quick Status Bar */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
-                className="grid grid-cols-3 gap-3 mt-8 pt-6 border-t border-white/20"
-              >
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                  <span className="text-xs font-bold text-gray-600">Status: Aktif</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-amber-500" />
-                  <span className="text-xs font-bold text-gray-600">24/7 Monitoring</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-emerald-500" />
-                  <span className="text-xs font-bold text-gray-600">Real-time Data</span>
-                </div>
-              </motion.div>
             </div>
           </div>
         </motion.div>
@@ -200,7 +178,7 @@ export default function HomePage() {
           initial="hidden"
           animate="show"
         >
-          {navigationCards.map((card, idx) => {
+          {navigationCards.map((card) => {
             const Icon = card.icon;
             return (
               <motion.div
@@ -233,19 +211,11 @@ export default function HomePage() {
                       >
                         <Icon className={`w-7 h-7 ${card.iconColor}`} />
                       </motion.div>
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.3 + idx * 0.1 }}
-                        className={`px-3 py-1 rounded-full bg-gradient-to-r ${card.color} text-white text-[10px] font-bold uppercase tracking-widest shadow-lg`}
-                      >
-                        {card.stats}
-                      </motion.div>
                     </div>
 
                     {/* Title and Description */}
                     <div className="flex-1 mb-6">
-                      <h3 className="text-2xl font-black text-gray-900 mb-2 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r transition-all duration-300" style={{ backgroundImage: `linear-gradient(135deg, var(--tw-gradient-stops))` }}>
+                      <h3 className="text-2xl font-black text-gray-900 mb-2">
                         {card.title}
                       </h3>
                       <p className="text-gray-600 text-sm leading-relaxed font-medium">{card.description}</p>
@@ -278,17 +248,17 @@ export default function HomePage() {
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-12"
         >
           {[
-            { icon: Activity, label: 'Real-time Monitoring', desc: 'Pantau 24/7', color: 'emerald' },
-            { icon: Zap, label: 'AI Deteksi Akurat', desc: '99% Presisi', color: 'purple' },
-            { icon: Leaf, label: 'Data Sensor IoT', desc: 'Multi-parameter', color: 'teal' },
-            { icon: TrendingUp, label: 'Insights Analytics', desc: 'Prediksi Akurat', color: 'amber' },
+            { icon: Activity, label: 'Real-time Monitoring', desc: 'Pantau Perubahan', color: 'straken' },
+            { icon: Zap, label: 'AI Deteksi Akurat', desc: '99% Presisi', color: 'viola' },
+            { icon: Leaf, label: 'Data Sensor IoT', desc: 'Multi-parameter', color: 'rosemary' },
+            { icon: TrendingUp, label: 'Insights Analytics', desc: 'Prediksi Akurat', color: 'texture' },
           ].map((feature, idx) => {
             const Icon = feature.icon;
             const colorMap: Record<string, string> = {
-              emerald: 'from-emerald-500 to-teal-600',
-              purple: 'from-purple-500 to-pink-600',
-              teal: 'from-teal-500 to-cyan-600',
-              amber: 'from-amber-500 to-orange-600',
+              straken: 'from-accent-straken to-secondary',
+              viola: 'from-accent-viola to-accent-texture',
+              rosemary: 'from-accent-rosemary to-accent-straken',
+              texture: 'from-accent-texture to-accent-melrose',
             };
 
             return (
@@ -317,7 +287,7 @@ export default function HomePage() {
           transition={{ delay: 1, duration: 0.6 }}
           className="relative overflow-hidden"
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600 rounded-3xl" />
+          <div className="absolute inset-0 bg-gradient-to-r from-accent-straken via-accent-rosemary to-accent-viola rounded-3xl" />
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
@@ -331,7 +301,7 @@ export default function HomePage() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => handleNavigate('portable')}
-              className="px-8 py-3 bg-white text-emerald-600 font-bold rounded-xl hover:shadow-xl transition-all duration-300"
+              className="px-8 py-3 bg-neutral-surface text-primary font-bold rounded-xl hover:shadow-xl transition-all duration-300"
             >
               Mulai Sekarang →
             </motion.button>

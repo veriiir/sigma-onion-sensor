@@ -74,8 +74,8 @@ export default function SensorCard({ config, value, prevValue, index }: SensorCa
             style={{
               width: `${Math.min(Math.max(((value - min) / (max - min)) * 100, 0), 100)}%`,
               backgroundColor:
-                value >= goodMin && value <= goodMax ? '#2E7D32' :
-                value < goodMin ? '#A05220' : '#ef4444',
+                value >= goodMin && value <= goodMax ? '#5D7E2D' :
+                value < goodMin ? '#9288A6' : '#ef4444',
             }}
           />
         </div>

@@ -9,7 +9,7 @@ export const SENSOR_CONFIGS: SensorConfig[] = [
     max: 100,
     goodMin: 40,
     goodMax: 70,
-    color: '#38b2ac',
+    color: '#5D7E2D',
   },
   {
     key: 'nitrogen',
@@ -19,7 +19,7 @@ export const SENSOR_CONFIGS: SensorConfig[] = [
     max: 100,
     goodMin: 20,
     goodMax: 60,
-    color: '#38b2ac',
+    color: '#27513D',
   },
   {
     key: 'phosphorus',
@@ -29,7 +29,7 @@ export const SENSOR_CONFIGS: SensorConfig[] = [
     max: 60,
     goodMin: 10,
     goodMax: 40,
-    color: '#38b2ac',
+    color: '#809752',
   },
   {
     key: 'potassium',
@@ -39,7 +39,7 @@ export const SENSOR_CONFIGS: SensorConfig[] = [
     max: 300,
     goodMin: 80,
     goodMax: 200,
-    color: '#38b2ac',
+    color: '#9288A6',
   },
   {
     key: 'temperature',
@@ -49,7 +49,7 @@ export const SENSOR_CONFIGS: SensorConfig[] = [
     max: 50,
     goodMin: 20,
     goodMax: 32,
-    color: '#38b2ac',
+    color: '#61536F',
   },
   {
     key: 'ph',
@@ -59,7 +59,7 @@ export const SENSOR_CONFIGS: SensorConfig[] = [
     max: 14,
     goodMin: 5.5,
     goodMax: 7.0,
-    color: '#38b2ac',
+    color: '#5C7B62',
   },
   {
     key: 'conductivity',
@@ -69,7 +69,7 @@ export const SENSOR_CONFIGS: SensorConfig[] = [
     max: 5,
     goodMin: 0.5,
     goodMax: 2.5,
-    color: '#38b2ac',
+    color: '#C2B4E2',
   },
 ];
 

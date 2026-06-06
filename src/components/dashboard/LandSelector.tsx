@@ -111,19 +111,19 @@ export default function LandSelector({ selectedLand, onSelect, systemType }: Lan
       <button
         onClick={() => setOpen(!open)}
         // REVISI: teal-400 -> primary (Hijau)
-        className="flex items-center gap-2.5 bg-white border border-gray-200 hover:border-primary rounded-xl px-4 py-2.5 transition-all duration-200 shadow-sm"
+        className="w-full flex items-center gap-2.5 bg-white border border-gray-200 hover:border-primary rounded-xl px-4 py-2.5 transition-all duration-200 shadow-sm"
       >
         {/* REVISI: teal-100 -> primary/10, teal-600 -> primary */}
         <div className="w-7 h-7 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
           <MapPin className="w-4 h-4 text-primary" />
         </div>
         <div className="text-left shrink-0">
-          <p className="text-xs text-gray-400 leading-none">{isPortable ? 'Lokasi Portable' : 'Pilih Lahan'}</p>
+          <p className="text-xs text-gray-400 leading-none">{isPortable ? 'Pilih Lokasi' : 'Pilih Lahan'}</p>
           <p className="text-sm font-semibold text-gray-800 mt-0.5 truncate max-w-[130px]">
-            {selected.label} {!isPortable && `— ${selected.crop}`}
+            {selected.label}
           </p>
         </div>
-        <ChevronDown className={`w-4 h-4 text-gray-400 ml-1 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-3 h-3 text-gray-400 ml-auto transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (

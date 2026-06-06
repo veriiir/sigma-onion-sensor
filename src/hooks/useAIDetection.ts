@@ -106,5 +106,11 @@ export function useAIDetection(systemType: SystemType, landId: LandId, userId: s
     return enriched;
   }, []);
 
-  return { detection, analyzing, lastAnalyzed, runDetection };
+  const clearDetection = useCallback(() => {
+    setDetection(null);
+    setAnalyzing(false);
+    setLastAnalyzed(null);
+  }, []);
+
+  return { detection, analyzing, lastAnalyzed, runDetection, clearDetection };
 }

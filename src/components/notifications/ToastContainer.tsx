@@ -5,16 +5,16 @@ import { Notification } from '../../types';
 
 const toastConfig = {
   success: {
-    icon: <CheckCircle className="w-5 h-5 text-teal-500" />,
-    border: 'border-teal-200',
-    bg: 'bg-teal-50',
-    bar: 'bg-teal-500',
+    icon: <CheckCircle className="w-5 h-5 text-accent-straken" />,
+    border: 'border-accent-straken/20',
+    bg: 'bg-accent-straken/10',
+    bar: 'bg-accent-straken',
   },
   warning: {
-    icon: <AlertTriangle className="w-5 h-5 text-amber-500" />,
-    border: 'border-amber-200',
-    bg: 'bg-amber-50',
-    bar: 'bg-amber-500',
+    icon: <AlertTriangle className="w-5 h-5 text-accent-rosemary" />,
+    border: 'border-accent-rosemary/30',
+    bg: 'bg-accent-rosemary/10',
+    bar: 'bg-accent-rosemary',
   },
   error: {
     icon: <XCircle className="w-5 h-5 text-red-500" />,
@@ -23,10 +23,10 @@ const toastConfig = {
     bar: 'bg-red-500',
   },
   info: {
-    icon: <Info className="w-5 h-5 text-blue-500" />,
-    border: 'border-blue-200',
-    bg: 'bg-blue-50',
-    bar: 'bg-blue-500',
+    icon: <Info className="w-5 h-5 text-accent-viola" />,
+    border: 'border-accent-viola/20',
+    bg: 'bg-accent-viola/10',
+    bar: 'bg-accent-viola',
   },
 };
 
@@ -39,7 +39,7 @@ function Toast({ notif, onDismiss }: { notif: Notification; onDismiss: () => voi
       animate={{ opacity: 1, x: 0, scale: 1 }}
       exit={{ opacity: 0, x: 60, scale: 0.95 }}
       transition={{ type: 'spring', damping: 22, stiffness: 250 }}
-      className={`relative w-80 bg-white rounded-2xl shadow-lg border ${cfg.border} overflow-hidden`}
+      className={`relative w-80 bg-neutral-surface rounded-2xl shadow-lg border ${cfg.border} overflow-hidden`}
     >
       <div className={`absolute top-0 left-0 right-0 h-0.5 ${cfg.bar}`} />
       <div className="flex items-start gap-3 p-4">

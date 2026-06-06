@@ -44,14 +44,9 @@ export default function SensorGauge({ value, min, max, goodMin, goodMax, size = 
   const nx = cx + needleLength * Math.cos(needleRad);
   const ny = cy + needleLength * Math.sin(needleRad);
 
-  /* REVISI: Mengubah konstanta warna fill
-     isGood -> Forest Green (#2E7D32)
-     Low (Under target) -> Soil Brown (#A05220)
-  */
-  const fillColor = isGood ? '#2E7D32' : value < goodMin ? '#A05220' : '#ef4444';
+  const fillColor = isGood ? '#5D7E2D' : value < goodMin ? '#9288A6' : '#ef4444';
   
-  /* REVISI: Mengubah trackColor agar tidak abu-abu kaku, menggunakan warna yang lebih "Warm/Beige" (#F1F1EF) */
-  const trackColor = '#F1F1EF';
+  const trackColor = '#E1D7D7';
 
   return (
     <svg width={size} height={size * 0.72} viewBox={`0 0 ${size} ${size * 0.72}`}>
@@ -86,11 +81,10 @@ export default function SensorGauge({ value, min, max, goodMin, goodMax, size = 
       <circle cx={cx} cy={cy} r={size * 0.04} fill={fillColor} style={{ transition: 'fill 1s ease' }} />
       <circle cx={cx} cy={cy} r={size * 0.025} fill="white" />
 
-      {/* REVISI: Indikator Rentang Optimal (Arc tipis) diubah menjadi warna Hijau Hutan #2E7D32 */}
       <path
         d={describeArc(startAngle + totalAngle * (goodMin - min) / (max - min), startAngle + totalAngle * (goodMax - min) / (max - min))}
         fill="none"
-        stroke="#2E7D32"
+        stroke="#5D7E2D"
         strokeWidth={strokeWidth * 0.3}
         strokeLinecap="round"
         opacity="0.15"

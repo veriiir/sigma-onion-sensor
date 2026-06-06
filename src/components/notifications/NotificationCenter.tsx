@@ -6,16 +6,16 @@ import { Notification } from '../../contexts/NotificationContext';
 
 const notificationConfig = {
   success: {
-    icon: <CheckCircle className="w-5 h-5 text-teal-500" />,
-    border: 'border-teal-200',
-    bg: 'bg-teal-50',
-    bar: 'bg-teal-500',
+    icon: <CheckCircle className="w-5 h-5 text-accent-straken" />,
+    border: 'border-accent-straken/20',
+    bg: 'bg-accent-straken/10',
+    bar: 'bg-accent-straken',
   },
   warning: {
-    icon: <AlertTriangle className="w-5 h-5 text-amber-500" />,
-    border: 'border-amber-200',
-    bg: 'bg-amber-50',
-    bar: 'bg-amber-500',
+    icon: <AlertTriangle className="w-5 h-5 text-accent-rosemary" />,
+    border: 'border-accent-rosemary/30',
+    bg: 'bg-accent-rosemary/10',
+    bar: 'bg-accent-rosemary',
   },
   error: {
     icon: <XCircle className="w-5 h-5 text-red-500" />,
@@ -24,10 +24,10 @@ const notificationConfig = {
     bar: 'bg-red-500',
   },
   info: {
-    icon: <Info className="w-5 h-5 text-blue-500" />,
-    border: 'border-blue-200',
-    bg: 'bg-blue-50',
-    bar: 'bg-blue-500',
+    icon: <Info className="w-5 h-5 text-accent-viola" />,
+    border: 'border-accent-viola/20',
+    bg: 'bg-accent-viola/10',
+    bar: 'bg-accent-viola',
   },
 };
 
@@ -82,7 +82,7 @@ function NotificationItem({
       </div>
 
       {!notif.read && (
-        <div className="absolute top-2 right-2 w-2 h-2 bg-blue-500 rounded-full" />
+        <div className="absolute top-2 right-2 w-2 h-2 bg-accent-melrose rounded-full" />
       )}
     </motion.div>
   );
@@ -123,10 +123,10 @@ export default function NotificationCenter({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -10, scale: 0.95 }}
           transition={{ duration: 0.15 }}
-          className="absolute right-0 top-full mt-3 w-96 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl border border-black/10 z-50 max-h-[500px] flex flex-col overflow-hidden"
+          className="absolute left-0 top-full mt-3 w-96 max-w-[calc(100vw-2rem)] bg-neutral-surface rounded-2xl shadow-2xl border border-primary/10 z-50 max-h-[500px] flex flex-col overflow-hidden"
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-black/5 bg-gradient-to-r from-slate-50 to-transparent">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-primary/10 bg-gradient-to-r from-accent-melrose/20 to-transparent">
             <div>
               <h3 className="text-sm font-bold text-gray-800">Notifikasi</h3>
               {unreadCount > 0 && (
@@ -135,14 +135,22 @@ export default function NotificationCenter({
                 </p>
               )}
             </div>
-            {unreadCount > 0 && (
+            <div className="flex items-center gap-2">
+              {unreadCount > 0 && (
+                <button
+                  onClick={markAllAsRead}
+                  className="text-[10px] font-bold text-accent-texture hover:text-primary transition-colors px-2 py-1 rounded-lg hover:bg-accent-melrose/30"
+                >
+                  Tandai Semua
+                </button>
+              )}
               <button
-                onClick={markAllAsRead}
-                className="text-[10px] font-bold text-blue-600 hover:text-blue-700 transition-colors px-2 py-1 rounded-lg hover:bg-blue-50"
+                onClick={onClose}
+                className="p-1.5 rounded-lg hover:bg-accent-melrose/30 text-gray-400 hover:text-gray-700 transition-colors"
               >
-                Tandai Semua
+                <X className="w-4 h-4" />
               </button>
-            )}
+            </div>
           </div>
 
           {/* Content */}
@@ -173,7 +181,7 @@ export default function NotificationCenter({
 
           {/* Footer */}
           {hasNotifications && (
-            <div className="border-t border-black/5 px-4 py-3 bg-gray-50 flex items-center justify-between">
+            <div className="border-t border-primary/10 px-4 py-3 bg-accent-melrose/15 flex items-center justify-between">
               <p className="text-[10px] font-semibold text-gray-500">
                 Total: {notifications.length} notifikasi
               </p>

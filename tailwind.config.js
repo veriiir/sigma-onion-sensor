@@ -4,30 +4,36 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Berdasarkan palet "Vivid Earth" yang Anda kirim
+        // Palette selaras dengan referensi floral green
         primary: {
-          DEFAULT: '#2E7D32', // Forest Green
-          light: '#E8F5E9',
+          DEFAULT: '#092620', // Deep Slate Green
+          light: '#E1D7D7', // Pink Organdy
         },
         secondary: {
-          DEFAULT: '#0288D1', // Sky Blue
-          light: '#E1F5FE',
+          DEFAULT: '#27513D', // Springbok Green
+          light: '#A0A98F', // Sagey
         },
         tertiary: {
-          DEFAULT: '#A05220', // Soil Brown
-          light: '#FBE9E7',
+          DEFAULT: '#5C7B62', // Korean Mint
+          light: '#A0A98F', // Sagey
         },
         neutral: {
-          surface: '#F8F9F8', // Background krim/abu sangat muda seperti di foto
-          muted: '#747970',
+          surface: '#E1D7D7', // Pink Organdy
+          muted: '#A0A98F', // Sagey
+        },
+        accent: {
+          straken: '#5D7E2D',
+          viola: '#9288A6',
+          rosemary: '#809752',
+          texture: '#61536F',
+          melrose: '#C2B4E2',
         }
       },
       borderRadius: {
         '4xl': '2.5rem', // Sesuai permintaan Anda untuk lekukan modal yang dalam
       },
       fontFamily: {
-        // Sesuaikan dengan referensi (Manrope adalah pilihan terbaik untuk style ini)
-        sans: ['Manrope', 'sans-serif'], 
+        sans: ['Inter', 'sans-serif'], 
       },
     },
   },

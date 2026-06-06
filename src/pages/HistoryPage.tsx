@@ -298,8 +298,8 @@ export default function HistoryPage() {
           <History className="w-6 h-6" />
         </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900 uppercase tracking-tighter">Riwayat Pemantauan</h2>
-            <p className="text-sm text-neutral-muted font-medium">Mode {historyViewMode === 'portable' ? 'Portable Mode' : 'Panel Mode'}</p>
+            <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tighter">Riwayat Pemantauan</h2>
+            <p className="text-sm text-neutral-muted font-medium">{historyViewMode === 'portable' ? 'Portable Mode' : 'Panel Mode'}</p>
           </div>
         </div>
 

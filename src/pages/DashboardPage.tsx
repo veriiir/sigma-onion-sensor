@@ -1,14 +1,13 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Smartphone, MonitorSpeaker, Thermometer, Droplets, Zap, FlaskConical,
+  Smartphone, MonitorSpeaker,
   BrainCircuit, Camera, AlertTriangle, ShieldAlert, CheckCircle, Clock, MapPin, RefreshCw,
 } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useSensorData } from '../hooks/useSensorData';
 import SensorCard from '../components/dashboard/SensorCard';
-import UpdateTimer from '../components/dashboard/UpdateTimer';
 import LandSelector from '../components/dashboard/LandSelector';
 import { SENSOR_CONFIGS } from '../constants/sensors';
 import { SensorReading, Land, AIAnalysisRecord, SystemType, LandId } from '../types';
@@ -29,8 +28,8 @@ const DISEASE_SEVERITY: Record<string, 'high' | 'medium' | 'none'> = {
 
 const severityCfg = {
   high: { label: 'Risiko Tinggi', color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200', dot: 'bg-red-500', icon: <AlertTriangle className="w-3.5 h-3.5" /> },
-  medium: { label: 'Risiko Sedang', color: 'text-tertiary', bg: 'bg-tertiary/10', border: 'border-tertiary/20', dot: 'bg-amber-400', icon: <ShieldAlert className="w-3.5 h-3.5" /> },
-  none: { label: 'Sehat', color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/20', dot: 'bg-primary', icon: <CheckCircle className="w-3.5 h-3.5" /> },
+  medium: { label: 'Risiko Sedang', color: 'text-accent-viola', bg: 'bg-accent-viola/10', border: 'border-accent-viola/20', dot: 'bg-accent-viola', icon: <ShieldAlert className="w-3.5 h-3.5" /> },
+  none: { label: 'Sehat', color: 'text-accent-straken', bg: 'bg-accent-straken/10', border: 'border-accent-straken/20', dot: 'bg-accent-straken', icon: <CheckCircle className="w-3.5 h-3.5" /> },
 };
 
 function timeAgo(dateStr: string) {
@@ -91,7 +90,7 @@ function AIStatusBanner({ systemType, landId }: { systemType: SystemType; landId
                 <span className="text-xs text-gray-400">{latest.confidence?.toFixed(0) ?? '0'}% kepercayaan</span>
               )}
               {latest?.latitude != null && (
-                <span className="flex items-center gap-0.5 text-xs text-teal-500">
+                <span className="flex items-center gap-0.5 text-xs text-secondary">
                   <MapPin className="w-3 h-3 shrink-0" />
                   {latest.latitude?.toFixed(4) ?? '0'}, {latest.longitude?.toFixed(4) ?? '0'}
                 </span>
@@ -107,7 +106,7 @@ function AIStatusBanner({ systemType, landId }: { systemType: SystemType; landId
       )}
       <button
         onClick={() => setActivePage('ai-analysis')}
-        className="flex items-center gap-1.5 text-xs font-semibold text-white bg-primary hover:bg-primary/90 px-3 py-1.5 rounded-xl transition-colors shrink-0 shadow-sm shadow-primary/20"
+        className="flex items-center gap-1.5 text-xs font-semibold text-white bg-accent-texture hover:bg-accent-texture/90 px-3 py-1.5 rounded-xl transition-colors shrink-0 shadow-sm shadow-accent-texture/20"
       >
         <Camera className="w-3.5 h-3.5" />
         Analisis Foto
@@ -116,70 +115,20 @@ function AIStatusBanner({ systemType, landId }: { systemType: SystemType; landId
   );
 }
 
-function StatBadge({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: string; color: string }) {
-  return (
-    <div className="bg-white rounded-2xl p-4 shadow-sm border border-black/5 flex items-center gap-3">
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
-        {icon}
-      </div>
-      <div>
-        <p className="text-xs text-neutral-muted font-bold uppercase tracking-tight">{label}</p>
-        <p className="text-sm font-black text-gray-800 mt-0.5 tracking-tight">{value}</p>
-      </div>
-    </div>
-  );
-}
-
-function GreetingBanner() {
-  const { profile } = useAuth();
-
-  const hour = new Date().getHours();
-  const greeting = hour < 11 ? 'Selamat Pagi' : hour < 15 ? 'Selamat Siang' : hour < 19 ? 'Selamat Sore' : 'Selamat Malam';
-  const name = profile?.full_name?.trim() || 'Petani';
-
-  return (
-    <div className="px-1">
-      <p className="text-2xl md:text-3xl font-black tracking-tight text-primary">{greeting}, {name}!</p>
-      <p className="text-sm text-neutral-muted mt-1">Pantau kondisi lahan hari ini dan lakukan tindakan lebih cepat.</p>
-    </div>
-  );
-}
-
 function PortableDashboard() {
   const { activeMode, selectedLand, setSelectedLand } = useApp();
   const {
     sensorData,
-    nextUpdateIn,
-    lastUpdated,
     loading,
-    isDemoData,
     refreshSensorData,
-    refreshInterval,
   } = useSensorData(activeMode, selectedLand);
   
-  // Safety check: if sensorData is not ready, return early
-  if (!sensorData) {
-    return (
-      <div className="space-y-5">
-        <GreetingBanner />
-        <div className="text-center py-12">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-4">
-            <RefreshCw className="w-5 h-5 text-gray-400 animate-spin" />
-          </div>
-          <p className="text-sm text-gray-500">Memuat data sensor...</p>
-        </div>
-      </div>
-    );
-  }
-
   const prevDataRef = useRef<SensorReading | null>(null);
-  const prevData = prevDataRef.current;
-  prevDataRef.current = sensorData;
-
   const [lands, setLands] = useState<Land[]>(() => {
     const saved = localStorage.getItem('sigma_lands_data');
     return saved ? JSON.parse(saved) : INITIAL_LANDS;
   });
+
   useEffect(() => {
     const saved = localStorage.getItem('sigma_lands_data');
     if (saved) setLands(JSON.parse(saved));
@@ -203,24 +152,35 @@ function PortableDashboard() {
     if (!exists) setSelectedLand(portableLands[0].id);
   }, [lands, selectedLand, setSelectedLand]);
 
+  // Safety check: if sensorData is not ready, return early
+  if (!sensorData) {
+    return (
+      <div className="space-y-5">
+        <div className="text-center py-12">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-4">
+            <RefreshCw className="w-5 h-5 text-gray-400 animate-spin" />
+          </div>
+          <p className="text-sm text-gray-500">Memuat data sensor...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  const prevData = prevDataRef.current;
+  prevDataRef.current = sensorData;
+
   const currentLandName = lands.find(l => l.id === selectedLand && l.system_type === activeMode)?.label || 
     (activeMode === 'portable' ? 'Lokasi Portable' : 'Lokasi');
 
-  const healthyCount = SENSOR_CONFIGS.filter(c => {
-    const val = sensorData[c.key] as number;
-    return val >= c.goodMin && val <= c.goodMax;
-  }).length;
-
   return (
     <div className="space-y-5">
-      <GreetingBanner />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
-            <Smartphone className="w-5 h-5 text-primary" />
+          <div className="w-10 h-10 bg-accent-rosemary/15 rounded-xl flex items-center justify-center shrink-0">
+            <Smartphone className="w-5 h-5 text-accent-straken" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900 uppercase tracking-tighter">Portable Mode</h2>
+            <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tighter">Portable Mode</h2>
             <p className="text-sm text-neutral-muted font-medium">Pembacaan manual dari sensor lapangan</p>
           </div>
         </div>
@@ -228,34 +188,22 @@ function PortableDashboard() {
           <button
             onClick={() => refreshSensorData(true)}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-white text-xs font-bold uppercase tracking-tight shadow-sm shadow-primary/20 disabled:opacity-60 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-accent-straken text-white text-xs font-black shadow-sm shadow-accent-straken/20 disabled:opacity-60 disabled:cursor-not-allowed hover:bg-accent-straken/90 transition-colors"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            Ambil Data
+            <RefreshCw className={`w-4 h-4 shrink-0 ${loading ? 'animate-spin' : ''}`} />
+            AMBIL DATA
           </button>
-          <LandSelector selectedLand={selectedLand} onSelect={setSelectedLand} systemType={activeMode} />
+          <div className="flex-1">
+            <LandSelector selectedLand={selectedLand} onSelect={setSelectedLand} systemType={activeMode} />
+          </div>
         </div>
       </div>
-
-      <UpdateTimer
-        nextUpdateIn={nextUpdateIn}
-        lastUpdated={lastUpdated}
-        refreshInterval={refreshInterval}
-        scheduleLabel={isDemoData ? 'Data Contoh' : 'Pembaruan Manual'}
-      />
 
       <motion.div
         key={selectedLand}
         initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4 }}
         className="space-y-6"
       >
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatBadge icon={<Thermometer className="w-5 h-5 text-tertiary" />} label="Temp" value={`${sensorData?.temperature?.toFixed(1) ?? '0'}°C`} color="bg-tertiary/10" />
-          <StatBadge icon={<Droplets className="w-5 h-5 text-secondary" />} label="Kelembaban" value={`${sensorData?.moisture?.toFixed(1) ?? '0'}%`} color="bg-secondary/10" />
-          <StatBadge icon={<FlaskConical className="w-5 h-5 text-[#829D45]" />} label="Kadar pH" value={sensorData?.ph?.toFixed(2) ?? '0'} color="bg-[#829D45]/10" />
-          <StatBadge icon={<Zap className="w-5 h-5 text-primary" />} label="Sensor Optimal" value={`${healthyCount} / 7 OK`} color="bg-primary/10" />
-        </div>
-
         <AIStatusBanner systemType={activeMode} landId={selectedLand} />
 
         <div>
@@ -278,27 +226,9 @@ function PortableDashboard() {
 
 function PanelDashboard() {
   const { activeMode, selectedLand, setSelectedLand } = useApp();
-  const { sensorData, nextUpdateIn, lastUpdated, isDemoData, refreshInterval } = useSensorData(activeMode, selectedLand);
+  const { sensorData } = useSensorData(activeMode, selectedLand);
   
-  // Safety check: if sensorData is not ready, return early
-  if (!sensorData) {
-    return (
-      <div className="space-y-5">
-        <GreetingBanner />
-        <div className="text-center py-12">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-4">
-            <RefreshCw className="w-5 h-5 text-gray-400 animate-spin" />
-          </div>
-          <p className="text-sm text-gray-500">Memuat data sensor...</p>
-        </div>
-      </div>
-    );
-  }
-
   const prevDataRef = useRef<SensorReading | null>(null);
-  const prevData = prevDataRef.current;
-  prevDataRef.current = sensorData;
-
   const [lands, setLands] = useState<Land[]>(() => {
     const saved = localStorage.getItem('sigma_lands_data');
     return saved ? JSON.parse(saved) : INITIAL_LANDS;
@@ -331,48 +261,45 @@ function PanelDashboard() {
     }
   }, [lands]); // Remove selectedLand dari dependency untuk hindari infinite loop
 
-  const currentLand = lands.find(l => l.id === selectedLand) || lands.find(l => l.system_type === 'panel') || lands[0];
+  // Safety check: if sensorData is not ready, return early
+  if (!sensorData) {
+    return (
+      <div className="space-y-5">
+        <div className="text-center py-12">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-4">
+            <RefreshCw className="w-5 h-5 text-gray-400 animate-spin" />
+          </div>
+          <p className="text-sm text-gray-500">Memuat data sensor...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  const prevData = prevDataRef.current;
+  prevDataRef.current = sensorData;
 
-  const healthyCount = SENSOR_CONFIGS.filter(c => {
-    const val = sensorData[c.key] as number;
-    return val >= c.goodMin && val <= c.goodMax;
-  }).length;
+  const currentLand = lands.find(l => l.id === selectedLand) || lands.find(l => l.system_type === 'panel') || lands[0];
 
   return (
     <div className="space-y-5">
-      <GreetingBanner />
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         <div className="flex items-center gap-3 flex-1">
-          <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center shadow-inner">
-            <MonitorSpeaker className="w-5 h-5 text-primary" />
+          <div className="w-10 h-10 bg-accent-melrose/25 rounded-xl flex items-center justify-center shadow-inner">
+            <MonitorSpeaker className="w-5 h-5 text-accent-texture" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900 uppercase tracking-tighter">Panel Mode</h2>
+            <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tighter">Panel Mode</h2>
             <p className="text-sm text-neutral-muted font-medium">Pemantauan otomatis multi-lahan</p>
           </div>
         </div>
         <LandSelector selectedLand={selectedLand} onSelect={setSelectedLand} systemType={activeMode} />
       </div>
 
-      <UpdateTimer
-        nextUpdateIn={nextUpdateIn}
-        lastUpdated={lastUpdated}
-        refreshInterval={refreshInterval}
-        scheduleLabel={isDemoData ? 'Data Contoh' : 'Otomatis (10 dtk)'}
-      />
-
       <motion.div
         key={selectedLand}
         initial={{ opacity: 0, scale: 0.99 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4 }}
         className="space-y-6"
       >
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatBadge icon={<Thermometer className="w-5 h-5 text-tertiary" />} label="Suhu" value={`${sensorData?.temperature?.toFixed(1) ?? '0'}°C`} color="bg-tertiary/10" />
-          <StatBadge icon={<Droplets className="w-5 h-5 text-secondary" />} label="Kelembaban" value={`${sensorData?.moisture?.toFixed(1) ?? '0'}%`} color="bg-secondary/10" />
-          <StatBadge icon={<FlaskConical className="w-5 h-5 text-[#829D45]" />} label="pH Tanah" value={sensorData?.ph?.toFixed(2) ?? '0'} color="bg-[#829D45]/10" />
-          <StatBadge icon={<Zap className="w-5 h-5 text-primary" />} label="Sensor Optimal" value={`${healthyCount} / 7`} color="bg-primary/10" />
-        </div>
-
         <AIStatusBanner systemType={activeMode} landId={selectedLand} />
 
         <div>

@@ -12,12 +12,8 @@ interface OnionRealtimeDashboardProps {
 }
 
 export default function OnionRealtimeDashboard({ 
-<<<<<<< HEAD
   landId = "lahan1",
   systemType = 'panel'
-=======
-  landId = "lahan1" 
->>>>>>> ca6d14be428df15167693450654db72ec85b96df
 }: OnionRealtimeDashboardProps) {
   
   // FIX: Mengunci inisialisasi awal pada angka 0 (Bukan data random)
@@ -112,8 +108,8 @@ export default function OnionRealtimeDashboard({
     }
     if (sensorData.ph < 5.5) return { text: "Kadar Asam Tinggi (Butuh Kapur Dolomit)", color: "text-red-600 bg-red-50 border-red-200 animate-pulse" };
     if (sensorData.ph > 7.0) return { text: "Terlalu Basa (Butuh Pemupukan Sulfur/ZA)", color: "text-amber-600 bg-amber-50 border-amber-200" };
-    if (sensorData.moisture < 40) return { text: "Tanah Kering (Perlu Penyiraman / Irigasi)", color: "text-blue-600 bg-blue-50 border-blue-200" };
-    return { text: "Kondisi Tanah Optimal (Sangat Ideal untuk Bawang Merah)", color: "text-emerald-600 bg-emerald-50 border-emerald-200" };
+    if (sensorData.moisture < 40) return { text: "Tanah Kering (Perlu Penyiraman / Irigasi)", color: "text-accent-viola bg-accent-viola/10 border-accent-viola/20" };
+    return { text: "Kondisi Tanah Optimal (Sangat Ideal untuk Bawang Merah)", color: "text-accent-straken bg-accent-straken/10 border-accent-straken/20" };
   };
 
   const status = getSoilStatus();
@@ -121,7 +117,7 @@ export default function OnionRealtimeDashboard({
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[350px] bg-neutral-50 rounded-2xl border border-black/5 p-8">
-        <RefreshCw className="w-8 h-8 text-emerald-600 animate-spin mb-3" />
+        <RefreshCw className="w-8 h-8 text-secondary animate-spin mb-3" />
         <p className="text-sm font-semibold text-gray-500 font-sans">Mengkoneksikan ke database...</p>
       </div>
     );
@@ -136,8 +132,8 @@ export default function OnionRealtimeDashboard({
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-black text-gray-800 tracking-tight">SIGMA REALTIME MONITOR</h1>
             {isLive ? (
-              <span className="flex items-center gap-1 text-[10px] font-extrabold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" /> Live Connection
+              <span className="flex items-center gap-1 text-[10px] font-extrabold text-accent-straken bg-accent-straken/10 border border-accent-straken/20 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                <span className="w-1.5 h-1.5 rounded-full bg-accent-straken animate-ping" /> Live Connection
               </span>
             ) : (
               <span className="text-[10px] font-bold text-gray-400 bg-gray-100 border border-gray-200 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
@@ -146,11 +142,11 @@ export default function OnionRealtimeDashboard({
             )}
           </div>
           <p className="text-xs text-gray-500 mt-1 flex items-center gap-1.5">
-            <Smartphone className="w-3.5 h-3.5" /> Sumber Database: <span className="font-semibold text-emerald-600 font-mono">{systemType === 'portable' ? 'sensor_readings_portable' : 'sensor_readings_panel'}</span>
+            <Smartphone className="w-3.5 h-3.5" /> Sumber Database: <span className="font-semibold text-accent-straken font-mono">{systemType === 'portable' ? 'sensor_readings_portable' : 'sensor_readings_panel'}</span>
             {sensorData.land_id && (
               <>
                 <span className="text-gray-300">|</span>
-                <span>Lahan Terdeteksi: <span className="font-semibold text-amber-700 font-mono">{sensorData.land_id}</span></span>
+                <span>Lahan Terdeteksi: <span className="font-semibold text-accent-texture font-mono">{sensorData.land_id}</span></span>
               </>
             )}
           </p>
@@ -180,7 +176,7 @@ export default function OnionRealtimeDashboard({
       )}
 
       {/* Indikator Status Kelayakan */}
-      <div className={`p-4 rounded-xl border flex items-center justify-between transition-all duration-500 ${status.color} ${pulseEffect ? 'ring-4 ring-emerald-400/50 border-emerald-400 bg-emerald-100/50' : ''}`}>
+      <div className={`p-4 rounded-xl border flex items-center justify-between transition-all duration-500 ${status.color} ${pulseEffect ? 'ring-4 ring-accent-melrose/50 border-accent-melrose bg-accent-melrose/20' : ''}`}>
         <div className="flex items-center gap-3">
           <Activity className="w-5 h-5 shrink-0" />
           <div>
@@ -204,30 +200,30 @@ export default function OnionRealtimeDashboard({
             <div>
               <div className="flex justify-between text-xs font-bold mb-1">
                 <span>Nitrogen (N)</span>
-                <span className="text-emerald-600 font-extrabold">{sensorData.nitrogen} mg/kg</span>
+                <span className="text-accent-straken font-extrabold">{sensorData.nitrogen} mg/kg</span>
               </div>
               <div className="w-full bg-neutral-100 h-2 rounded-full overflow-hidden">
-                <div className="bg-emerald-500 h-full rounded-full transition-all duration-1000" style={{ width: `${Math.min((sensorData.nitrogen / 100) * 100, 100)}%` }}></div>
+                <div className="bg-accent-straken h-full rounded-full transition-all duration-1000" style={{ width: `${Math.min((sensorData.nitrogen / 100) * 100, 100)}%` }}></div>
               </div>
             </div>
 
             <div>
               <div className="flex justify-between text-xs font-bold mb-1">
                 <span>Fosfor (P)</span>
-                <span className="text-amber-600 font-extrabold">{sensorData.phosphorus} mg/kg</span>
+                <span className="text-accent-rosemary font-extrabold">{sensorData.phosphorus} mg/kg</span>
               </div>
               <div className="w-full bg-neutral-100 h-2 rounded-full overflow-hidden">
-                <div className="bg-amber-500 h-full rounded-full transition-all duration-1000" style={{ width: `${Math.min((sensorData.phosphorus / 100) * 100, 100)}%` }}></div>
+                <div className="bg-accent-rosemary h-full rounded-full transition-all duration-1000" style={{ width: `${Math.min((sensorData.phosphorus / 100) * 100, 100)}%` }}></div>
               </div>
             </div>
 
             <div>
               <div className="flex justify-between text-xs font-bold mb-1">
                 <span>Kalium (K)</span>
-                <span className="text-indigo-600 font-extrabold">{sensorData.potassium} mg/kg</span>
+                <span className="text-accent-viola font-extrabold">{sensorData.potassium} mg/kg</span>
               </div>
               <div className="w-full bg-neutral-100 h-2 rounded-full overflow-hidden">
-                <div className="bg-indigo-500 h-full rounded-full transition-all duration-1000" style={{ width: `${Math.min((sensorData.potassium / 200) * 100, 100)}%` }}></div>
+                <div className="bg-accent-viola h-full rounded-full transition-all duration-1000" style={{ width: `${Math.min((sensorData.potassium / 200) * 100, 100)}%` }}></div>
               </div>
             </div>
           </div>
@@ -237,14 +233,14 @@ export default function OnionRealtimeDashboard({
         <div className="bg-white p-6 rounded-2xl border border-black/5 shadow-sm flex flex-col justify-between">
           <div className="flex justify-between items-start">
             <span className="text-xs font-black uppercase text-gray-400 tracking-wider">Derajat Keasaman (pH)</span>
-            <div className="w-10 h-10 rounded-xl bg-[#829D45]/10 flex items-center justify-center text-[#829D45]"><FlaskConical className="w-5 h-5" /></div>
+            <div className="w-10 h-10 rounded-xl bg-accent-rosemary/15 flex items-center justify-center text-accent-straken"><FlaskConical className="w-5 h-5" /></div>
           </div>
           <div className="my-4">
             <h3 className="text-4xl font-black text-gray-800 tracking-tight">{Number(sensorData.ph).toFixed(2)}</h3>
             <p className="text-[10px] font-bold text-gray-400 mt-1">Sifat tanah: {sensorData.ph < 7.0 ? 'Asam' : sensorData.ph > 7.0 ? 'Basa' : 'Netral'}</p>
           </div>
           <div className="w-full bg-neutral-100 h-2 rounded-full overflow-hidden">
-            <div className="bg-[#829D45] h-full rounded-full transition-all duration-1000" style={{ width: `${(sensorData.ph / 14) * 100}%` }}></div>
+            <div className="bg-accent-straken h-full rounded-full transition-all duration-1000" style={{ width: `${(sensorData.ph / 14) * 100}%` }}></div>
           </div>
         </div>
 
@@ -252,7 +248,7 @@ export default function OnionRealtimeDashboard({
         <div className="bg-white p-6 rounded-2xl border border-black/5 shadow-sm flex flex-col justify-between gap-4">
           <div className="flex items-center justify-between border-b pb-2">
             <div className="flex items-center gap-2">
-              <Droplets className="w-4 h-4 text-blue-500" />
+              <Droplets className="w-4 h-4 text-accent-viola" />
               <span className="text-xs font-bold text-gray-600">Kelembaban Tanah</span>
             </div>
             <span className="text-lg font-black text-gray-800">{sensorData.moisture}%</span>

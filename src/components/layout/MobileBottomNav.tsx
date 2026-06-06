@@ -14,20 +14,20 @@ export default function MobileBottomNav() {
   const { activePage, setActivePage } = useApp();
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-20 safe-area-pb">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-neutral-surface/95 backdrop-blur border-t border-primary/10 z-20 safe-area-pb">
       <div className="flex items-center">
         {navItems.map(item => (
           <button
             key={item.page}
             onClick={() => setActivePage(item.page)}
             className={`flex-1 flex flex-col items-center gap-1 py-3 transition-all duration-200 ${
-              activePage === item.page ? 'text-teal-600' : 'text-gray-400 hover:text-gray-600'
+              activePage === item.page ? 'text-primary' : 'text-tertiary hover:text-secondary'
             }`}
           >
             {item.icon}
             <span className="text-xs font-medium">{item.label}</span>
             {activePage === item.page && (
-              <div className="absolute bottom-0 h-0.5 w-8 bg-teal-500 rounded-full" />
+              <div className="absolute bottom-0 h-0.5 w-8 bg-primary rounded-full" />
             )}
           </button>
         ))}

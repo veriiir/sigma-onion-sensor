@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import logo from '../assets/logo-sigma.png'; 
-import { Eye, EyeOff, Smartphone, MonitorSpeaker, AlertCircle, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { SystemType } from '../types';
 
@@ -12,7 +12,7 @@ export default function AuthPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [systemType, setSystemType] = useState<SystemType>('portable');
+  const [systemType] = useState<SystemType>('portable');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -128,7 +128,7 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-[#1B3022] via-[#14261D] to-[#0A1610]" />
+      <div className="absolute inset-0 bg-gradient-to-br from-primary via-accent-texture to-[#061D18]" />
       <div className="absolute inset-0 opacity-20">
         {Array.from({ length: 20 }).map((_, i) => (
           <div
@@ -156,7 +156,7 @@ export default function AuthPage() {
         <div className="backdrop-blur-2xl bg-white/5 border border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden">
           <div className="p-10">
             <div className="flex flex-col items-center mb-8">
-              <div className="w-20 h-20 bg-white/5 border-2 border-primary/20 rounded-3xl flex items-center justify-center mb-5 shadow-2xl shadow-black/20">
+              <div className="w-20 h-20 bg-white/5 border-2 border-accent-melrose/30 rounded-3xl flex items-center justify-center mb-5 shadow-2xl shadow-black/20">
                 <img src={logo} alt="SIGMA" className="w-10 h-10 object-contain drop-shadow-md" />
               </div>
               <h1 className="text-3xl font-black text-white tracking-tighter uppercase">SIGMA</h1>
@@ -183,7 +183,7 @@ export default function AuthPage() {
                   className="flex items-center gap-3 bg-primary/10 border border-primary/20 rounded-2xl px-5 py-4 mb-6 shadow-lg shadow-primary/5"
                 >
                   <CheckCircle className="w-4 h-4 text-primary shrink-0" />
-                  <p className="text-primary-light text-[11px] font-black uppercase italic leading-none">{success}</p>
+                  <p className="text-neutral-surface text-[11px] font-black uppercase italic leading-none">{success}</p>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -236,7 +236,7 @@ export default function AuthPage() {
                           value={password}
                           onChange={e => setPassword(e.target.value)}
                           placeholder="Minimal 6 karakter"
-                          className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 pr-12 text-white placeholder-white/30 focus:outline-none focus:border-teal-400/60 focus:bg-white/15 transition-all text-sm"
+                          className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 pr-12 text-white placeholder-white/30 focus:outline-none focus:border-accent-melrose/80 focus:bg-white/15 transition-all text-sm"
                         />
                         <button
                           type="button"
@@ -256,7 +256,7 @@ export default function AuthPage() {
                           value={confirmPassword}
                           onChange={e => setConfirmPassword(e.target.value)}
                           placeholder="Ulangi kata sandi baru"
-                          className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 pr-12 text-white placeholder-white/30 focus:outline-none focus:border-teal-400/60 focus:bg-white/15 transition-all text-sm"
+                          className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 pr-12 text-white placeholder-white/30 focus:outline-none focus:border-accent-melrose/80 focus:bg-white/15 transition-all text-sm"
                         />
                         <button
                           type="button"
@@ -304,7 +304,7 @@ export default function AuthPage() {
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     placeholder="nama@email.com"
-                    className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-teal-400/60 focus:bg-white/15 transition-all text-sm"
+                    className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-accent-melrose/80 focus:bg-white/15 transition-all text-sm"
                   />
                 </div>
 
@@ -316,7 +316,7 @@ export default function AuthPage() {
                       value={password}
                       onChange={e => setPassword(e.target.value)}
                       placeholder="Minimal 6 karakter"
-                      className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 pr-12 text-white placeholder-white/30 focus:outline-none focus:border-teal-400/60 focus:bg-white/15 transition-all text-sm"
+                      className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 pr-12 text-white placeholder-white/30 focus:outline-none focus:border-accent-melrose/80 focus:bg-white/15 transition-all text-sm"
                     />
                     <button
                       type="button"
@@ -359,7 +359,7 @@ export default function AuthPage() {
                         }
                       }}
                       placeholder="nama@email.com"
-                      className="w-full mt-3 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-teal-400/60 focus:bg-white/15 transition-all text-sm"
+                      className="w-full mt-3 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-accent-melrose/80 focus:bg-white/15 transition-all text-sm"
                     />
                     <div className="mt-3 flex gap-2">
                       <button
@@ -390,7 +390,7 @@ export default function AuthPage() {
                         value={confirmPassword}
                         onChange={e => setConfirmPassword(e.target.value)}
                         placeholder="Ulangi kata sandi"
-                        className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 pr-12 text-white placeholder-white/30 focus:outline-none focus:border-teal-400/60 focus:bg-white/15 transition-all text-sm"
+                        className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 pr-12 text-white placeholder-white/30 focus:outline-none focus:border-accent-melrose/80 focus:bg-white/15 transition-all text-sm"
                       />
                       <button
                         type="button"
@@ -398,44 +398,6 @@ export default function AuthPage() {
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
                       >
                         {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {mode === 'register' && (
-                  <div>
-                    <label className="block text-white/70 text-sm mb-2">Tipe Perangkat</label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setSystemType('portable')}
-                        className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all duration-200 ${
-                          systemType === 'portable'
-                            ? 'bg-primary border-primary text-white'
-                            : 'bg-white/5 border-white/5 text-white/50 hover:bg-white/10'
-                        }`}
-                      >
-                        <Smartphone className="w-6 h-6" />
-                        <div className="text-center">
-                          <p className="text-xs font-semibold">Portable</p>
-                          <p className="text-xs opacity-70 mt-0.5">Sensor Genggam</p>
-                        </div>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSystemType('panel')}
-                        className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all duration-200 ${
-                          systemType === 'panel'
-                            ? 'bg-primary border-primary text-white'
-                            : 'bg-white/5 border-white/15 text-white/50 hover:bg-white/10'
-                        }`}
-                      >
-                        <MonitorSpeaker className="w-6 h-6" />
-                        <div className="text-center">
-                          <p className="text-xs font-semibold">Panel Tetap</p>
-                          <p className="text-xs opacity-70 mt-0.5">Stasiun Lapangan</p>
-                        </div>
                       </button>
                     </div>
                   </div>

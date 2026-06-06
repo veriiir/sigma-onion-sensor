@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   BrainCircuit, Play, Save, CheckCircle, AlertTriangle, ShieldAlert,
@@ -56,7 +56,7 @@ const severityCfg = {
 const correlationCfg: Record<SensorCorrelation, { label: string; color: string; bg: string; border: string; icon: React.ReactNode }> = {
   verified: { label: 'Terverifikasi Saintifik', color: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/30', icon: <BadgeCheck className="w-4 h-4" /> },
   contradiction: { label: 'Kontradiksi Sensor', color: 'text-tertiary', bg: 'bg-tertiary/10', border: 'border-tertiary/30', icon: <ShieldAlert className="w-4 h-4" /> },
-  nutrient_issue: { label: 'Masalah Nutrisi', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200', icon: <FlaskConical className="w-4 h-4" /> },
+  nutrient_issue: { label: 'Masalah Nutrisi', color: 'text-tertiary', bg: 'bg-tertiary/10', border: 'border-tertiary/20', icon: <FlaskConical className="w-4 h-4" /> },
   insufficient_data: { label: 'Data Sensor Terbatas', color: 'text-gray-500', bg: 'bg-gray-50', border: 'border-gray-200', icon: <ShieldQuestion className="w-4 h-4" /> },
 };
 
@@ -187,12 +187,12 @@ function ActionStepsPanel({ steps }: { steps: ActionStep[] }) {
 // ── Main Page ────────────────────────────────────────────────────────────────
 
 export default function AIAnalysisPage() {
-  const { activeMode, selectedLand, setSelectedLand } = useApp();
+  const { activeMode, setActiveMode, selectedLand, setSelectedLand } = useApp();
   const { user } = useAuth();
   const { push } = useNotification();
-  const { detection, analyzing, lastAnalyzed, runDetection } = useAIDetection(activeMode, selectedLand, user?.id ?? null);
+  const { detection, analyzing, lastAnalyzed, runDetection, clearDetection } = useAIDetection(activeMode, selectedLand, user?.id ?? null);
   const { lands } = useLands(activeMode);
-  const { session, updateSession } = useAnalysisSession(activeMode, selectedLand);
+  const { session, updateSession, resetSession } = useAnalysisSession(activeMode, selectedLand);
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -207,6 +207,15 @@ export default function AIAnalysisPage() {
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const { capturedImageBase64, captureMode, location: loc, manualLand } = session;
+
+  // Reset state saat berganti mode
+  useEffect(() => {
+    resetSession();
+    clearDetection();
+    setImgLoaded(false);
+    setLocationValidation(null);
+    setSaved(false);
+  }, [activeMode, resetSession, clearDetection]);
 
   const effectiveLabel = detection?.label ?? '';
   const diseaseInfo = detection ? (DISEASE_DATA[effectiveLabel] ?? DISEASE_DATA['Sehat']) : null;
@@ -360,20 +369,47 @@ export default function AIAnalysisPage() {
   }
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <div className="flex items-center gap-3 flex-1">
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={activeMode}
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -12 }}
+        transition={{ duration: 0.3 }}
+        className="space-y-5"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary shadow-sm shadow-primary/10">
             <BrainCircuit className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900 uppercase tracking-tighter">SIGMA PATHOGEN INTELLIGENCE</h2>
-            <p className="text-sm text-neutral-muted font-medium">Pipeline 3 Lapis — Visi Komputer + Validasi Sensor IoT</p>
+            <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tighter">SIGMA PATHOGEN INTELLIGENCE</h2>
+            <p className="text-sm text-neutral-muted font-medium">{activeMode === 'portable' ? 'Portable Mode' : 'Panel Mode'}</p>
           </div>
         </div>
-        {activeMode === 'panel' && (
+
+        <div className="flex items-center gap-3">
+          <div className="flex bg-gray-100 rounded-xl p-1">
+            <button
+              onClick={() => setActiveMode('portable')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                activeMode === 'portable' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Portable Mode
+            </button>
+            <button
+              onClick={() => setActiveMode('panel')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                activeMode === 'panel' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Panel Mode
+            </button>
+          </div>
           <LandSelector selectedLand={selectedLand} onSelect={setSelectedLand} systemType={activeMode} />
-        )}
+        </div>
       </div>
 
       {!detection && !analyzing && (
@@ -463,7 +499,7 @@ export default function AIAnalysisPage() {
                 )}
 
                 {analyzing && (
-                  <div className="absolute inset-0 bg-[#14261D]/80 flex flex-col items-center justify-center gap-6">
+                  <div className="absolute inset-0 bg-primary/80 flex flex-col items-center justify-center gap-6">
                     <div className="w-16 h-16 border-4 border-secondary/10 border-t-secondary rounded-full animate-spin shadow-2xl" />
                     <div className="text-center">
                       <p className="text-white font-semibold">Proses Analisis Sedang Berjalan...</p>
@@ -494,7 +530,7 @@ export default function AIAnalysisPage() {
                   </AnimatePresence>
                 )}
 
-                <div className="absolute bottom-3 right-3 flex items-center gap-2 bg-[#14261D] rounded-full px-4 py-2 border border-white/10 shadow-2xl">
+                <div className="absolute bottom-3 right-3 flex items-center gap-2 bg-primary rounded-full px-4 py-2 border border-white/10 shadow-2xl">
                   <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
                   <span className="text-white text-xs font-medium">SIGMA CAM</span>
                 </div>
@@ -563,7 +599,7 @@ export default function AIAnalysisPage() {
                     <div className="text-center py-2">
                       <p className="text-2xl font-bold text-gray-900">{detection.label}</p>
                       {detection.pipeline?.overriddenLabel && (
-                        <p className="text-xs text-blue-500 mt-1">Dikoreksi dari hasil AI asli</p>
+                        <p className="text-xs text-tertiary mt-1">Dikoreksi dari hasil AI asli</p>
                       )}
                       <p className="text-gray-400 text-sm mt-1">Penyakit Terdeteksi</p>
                       <div className="mt-4">
@@ -624,7 +660,8 @@ export default function AIAnalysisPage() {
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
+    </AnimatePresence>
   );
 }
 
@@ -666,8 +703,8 @@ function LocationCard({
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <p className="text-sm font-semibold text-teal-700">Lokasi Foto</p>
-              <span className="text-xs bg-teal-100 text-secondary px-2 py-0.5 rounded-full font-medium uppercase tracking-wide">
+              <p className="text-sm font-semibold text-secondary">Lokasi Foto</p>
+              <span className="text-xs bg-secondary/10 text-secondary px-2 py-0.5 rounded-full font-medium uppercase tracking-wide">
                 {location.source === 'gps' ? 'GPS Real-time' : 'EXIF Foto'}
               </span>
             </div>
@@ -688,17 +725,17 @@ function LocationCard({
         </div>
 
         {landsWithCoords.length > 0 && validation && (
-          <div className={`rounded-2xl border px-4 py-3.5 ${validation.withinRadius ? 'bg-teal-50 border-teal-200' : 'bg-red-50 border-red-200'}`}>
+          <div className={`rounded-2xl border px-4 py-3.5 ${validation.withinRadius ? 'bg-secondary/10 border-secondary/20' : 'bg-red-50 border-red-200'}`}>
             <div className="flex items-start gap-3">
-              <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${validation.withinRadius ? 'bg-teal-500' : 'bg-red-500'}`}>
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${validation.withinRadius ? 'bg-secondary' : 'bg-red-500'}`}>
                 {validation.withinRadius ? <ShieldCheck className="w-4 h-4 text-white" /> : <ShieldX className="w-4 h-4 text-white" />}
               </div>
               <div className="flex-1 min-w-0">
-                <p className={`text-sm font-semibold ${validation.withinRadius ? 'text-teal-700' : 'text-red-700'}`}>
+                <p className={`text-sm font-semibold ${validation.withinRadius ? 'text-secondary' : 'text-red-700'}`}>
                   {validation.withinRadius ? 'Lokasi Sesuai — Valid' : 'Lokasi Tidak Sesuai — Di Luar Lahan'}
                 </p>
                 {validation.land && (
-                  <p className={`text-xs mt-0.5 ${validation.withinRadius ? 'text-teal-600' : 'text-red-600'}`}>
+                  <p className={`text-xs mt-0.5 ${validation.withinRadius ? 'text-tertiary' : 'text-red-600'}`}>
                     Lahan terdekat: <span className="font-semibold">{validation.land.label}</span>
                     {validation.distanceM != null && (
                       <span className="ml-1 opacity-70">({validation.distanceM < 1000 ? `${validation.distanceM} m` : `${(validation.distanceM / 1000).toFixed(1)} km`})</span>
@@ -716,7 +753,7 @@ function LocationCard({
         )}
 
         {landsWithCoords.length === 0 && (
-          <div className="flex items-center gap-2.5 bg-white/70 rounded-xl border border-teal-100 px-4 py-3">
+          <div className="flex items-center gap-2.5 bg-white/70 rounded-xl border border-secondary/10 px-4 py-3">
             <Navigation className="w-4 h-4 text-secondary shrink-0" />
             <p className="text-xs text-secondary/70">
               Atur koordinat lahan di Pengaturan untuk mengaktifkan validasi otomatis.
