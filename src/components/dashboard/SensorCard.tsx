@@ -24,11 +24,13 @@ export default function SensorCard({ config, value, prevValue, index }: SensorCa
   const TrendIcon = diff > 0.5 ? TrendingUp : diff < -0.5 ? TrendingDown : Minus;
   const trendColor = diff > 0.5 ? 'text-primary' : diff < -0.5 ? 'text-red-500' : 'text-neutral-muted';
 
-  const displayValue = config.key === 'conductivity'
-    ? value.toFixed(3)
-    : config.key === 'ph'
-    ? value.toFixed(2)
-    : value.toFixed(1);
+  const displayValue = value != null 
+  ? (config.key === 'conductivity'
+      ? value.toFixed(3)
+      : config.key === 'ph'
+      ? value.toFixed(2)
+      : value.toFixed(1))
+  : '0.0';
 
   return (
     <motion.div

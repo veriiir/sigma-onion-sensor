@@ -67,7 +67,7 @@ function useLatestAI(systemType: SystemType, landId: LandId) {
 function AIStatusBanner({ systemType, landId }: { systemType: SystemType; landId: LandId }) {
   const { setActivePage } = useApp();
   const latest = useLatestAI(systemType, landId);
-  const severity = latest ? (DISEASE_SEVERITY[latest.disease_name] ?? 'none') : null;
+  const severity = latest ? (DISEASE_SEVERITY[latest?.disease_name] ?? 'none') : null;
   const sev = severity ? severityCfg[severity] : null;
 
   return (
@@ -77,7 +77,7 @@ function AIStatusBanner({ systemType, landId }: { systemType: SystemType; landId
           <div className={`w-2 h-2 rounded-full shrink-0 ${sev.dot}`} />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <p className={`text-xs font-bold ${sev.color}`}>{latest!.disease_name}</p>
+              <p className={`text-xs font-bold ${sev.color}`}>{latest?.disease_name ?? '—'}</p>
               <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${sev.bg} ${sev.color} border ${sev.border}`}>
                 {sev.label}
               </span>
@@ -85,15 +85,15 @@ function AIStatusBanner({ systemType, landId }: { systemType: SystemType; landId
             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
               <span className="flex items-center gap-1 text-xs text-gray-400">
                 <Clock className="w-3 h-3 shrink-0" />
-                {latest!.created_at ? timeAgo(latest!.created_at) : '—'}
+                {latest?.created_at ? timeAgo(latest.created_at) : '—'}
               </span>
-              {latest!.confidence != null && (
-                <span className="text-xs text-gray-400">{latest!.confidence.toFixed(0)}% kepercayaan</span>
+              {latest?.confidence != null && (
+                <span className="text-xs text-gray-400">{latest.confidence?.toFixed(0) ?? '0'}% kepercayaan</span>
               )}
-              {latest!.latitude != null && (
+              {latest?.latitude != null && (
                 <span className="flex items-center gap-0.5 text-xs text-teal-500">
                   <MapPin className="w-3 h-3 shrink-0" />
-                  {latest!.latitude.toFixed(4)}, {latest!.longitude!.toFixed(4)}
+                  {latest.latitude?.toFixed(4) ?? '0'}, {latest.longitude?.toFixed(4) ?? '0'}
                 </span>
               )}
             </div>
@@ -156,6 +156,22 @@ function PortableDashboard() {
     refreshSensorData,
     refreshInterval,
   } = useSensorData(activeMode, selectedLand);
+  
+  // Safety check: if sensorData is not ready, return early
+  if (!sensorData) {
+    return (
+      <div className="space-y-5">
+        <GreetingBanner />
+        <div className="text-center py-12">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-4">
+            <RefreshCw className="w-5 h-5 text-gray-400 animate-spin" />
+          </div>
+          <p className="text-sm text-gray-500">Memuat data sensor...</p>
+        </div>
+      </div>
+    );
+  }
+
   const prevDataRef = useRef<SensorReading | null>(null);
   const prevData = prevDataRef.current;
   prevDataRef.current = sensorData;
@@ -234,9 +250,9 @@ function PortableDashboard() {
         className="space-y-6"
       >
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatBadge icon={<Thermometer className="w-5 h-5 text-tertiary" />} label="Temp" value={`${sensorData.temperature.toFixed(1)}°C`} color="bg-tertiary/10" />
-          <StatBadge icon={<Droplets className="w-5 h-5 text-secondary" />} label="Kelembaban" value={`${sensorData.moisture.toFixed(1)}%`} color="bg-secondary/10" />
-          <StatBadge icon={<FlaskConical className="w-5 h-5 text-[#829D45]" />} label="Kadar pH" value={sensorData.ph.toFixed(2)} color="bg-[#829D45]/10" />
+          <StatBadge icon={<Thermometer className="w-5 h-5 text-tertiary" />} label="Temp" value={`${sensorData?.temperature?.toFixed(1) ?? '0'}°C`} color="bg-tertiary/10" />
+          <StatBadge icon={<Droplets className="w-5 h-5 text-secondary" />} label="Kelembaban" value={`${sensorData?.moisture?.toFixed(1) ?? '0'}%`} color="bg-secondary/10" />
+          <StatBadge icon={<FlaskConical className="w-5 h-5 text-[#829D45]" />} label="Kadar pH" value={sensorData?.ph?.toFixed(2) ?? '0'} color="bg-[#829D45]/10" />
           <StatBadge icon={<Zap className="w-5 h-5 text-primary" />} label="Sensor Optimal" value={`${healthyCount} / 7 OK`} color="bg-primary/10" />
         </div>
 
@@ -263,6 +279,22 @@ function PortableDashboard() {
 function PanelDashboard() {
   const { activeMode, selectedLand, setSelectedLand } = useApp();
   const { sensorData, nextUpdateIn, lastUpdated, isDemoData, refreshInterval } = useSensorData(activeMode, selectedLand);
+  
+  // Safety check: if sensorData is not ready, return early
+  if (!sensorData) {
+    return (
+      <div className="space-y-5">
+        <GreetingBanner />
+        <div className="text-center py-12">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-4">
+            <RefreshCw className="w-5 h-5 text-gray-400 animate-spin" />
+          </div>
+          <p className="text-sm text-gray-500">Memuat data sensor...</p>
+        </div>
+      </div>
+    );
+  }
+
   const prevDataRef = useRef<SensorReading | null>(null);
   const prevData = prevDataRef.current;
   prevDataRef.current = sensorData;
@@ -271,28 +303,33 @@ function PanelDashboard() {
     const saved = localStorage.getItem('sigma_lands_data');
     return saved ? JSON.parse(saved) : INITIAL_LANDS;
   });
-  useEffect(() => {
-    const saved = localStorage.getItem('sigma_lands_data');
-    if (saved) setLands(JSON.parse(saved));
-  }, [selectedLand]);
 
+  // FIX: Fetch lands dari database sekali saat mount
   useEffect(() => {
     async function fetchLands() {
-      const { data } = await supabase.from('lands').select('*');
-      if (!data) return;
-      const merged = [...INITIAL_LANDS, ...data];
-      setLands(merged);
-      localStorage.setItem('sigma_lands_data', JSON.stringify(merged));
+      try {
+        const { data } = await supabase.from('lands').select('*');
+        if (!data) return;
+        const merged = [...INITIAL_LANDS, ...data];
+        setLands(merged);
+        localStorage.setItem('sigma_lands_data', JSON.stringify(merged));
+      } catch (error) {
+        console.error('Error fetching lands:', error);
+      }
     }
     fetchLands();
   }, []);
 
+  // FIX: Validasi selectedLand terhadap panel lands - hanya jalankan jika lands sudah ada
   useEffect(() => {
     const panelLands = lands.filter(l => l.system_type === 'panel');
     if (!panelLands.length) return;
+    
     const exists = panelLands.some(l => l.id === selectedLand);
-    if (!exists) setSelectedLand(panelLands[0].id);
-  }, [lands, selectedLand, setSelectedLand]);
+    if (!exists) {
+      setSelectedLand(panelLands[0].id);
+    }
+  }, [lands]); // Remove selectedLand dari dependency untuk hindari infinite loop
 
   const currentLand = lands.find(l => l.id === selectedLand) || lands.find(l => l.system_type === 'panel') || lands[0];
 
@@ -330,9 +367,9 @@ function PanelDashboard() {
         className="space-y-6"
       >
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatBadge icon={<Thermometer className="w-5 h-5 text-tertiary" />} label="Suhu" value={`${sensorData.temperature.toFixed(1)}°C`} color="bg-tertiary/10" />
-          <StatBadge icon={<Droplets className="w-5 h-5 text-secondary" />} label="Kelembaban" value={`${sensorData.moisture.toFixed(1)}%`} color="bg-secondary/10" />
-          <StatBadge icon={<FlaskConical className="w-5 h-5 text-[#829D45]" />} label="pH Tanah" value={sensorData.ph.toFixed(2)} color="bg-[#829D45]/10" />
+          <StatBadge icon={<Thermometer className="w-5 h-5 text-tertiary" />} label="Suhu" value={`${sensorData?.temperature?.toFixed(1) ?? '0'}°C`} color="bg-tertiary/10" />
+          <StatBadge icon={<Droplets className="w-5 h-5 text-secondary" />} label="Kelembaban" value={`${sensorData?.moisture?.toFixed(1) ?? '0'}%`} color="bg-secondary/10" />
+          <StatBadge icon={<FlaskConical className="w-5 h-5 text-[#829D45]" />} label="pH Tanah" value={sensorData?.ph?.toFixed(2) ?? '0'} color="bg-[#829D45]/10" />
           <StatBadge icon={<Zap className="w-5 h-5 text-primary" />} label="Sensor Optimal" value={`${healthyCount} / 7`} color="bg-primary/10" />
         </div>
 

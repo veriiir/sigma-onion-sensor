@@ -3,9 +3,11 @@ import { Menu, ChevronRight, Bell, ChevronDown, LogOut, User, Settings } from 'l
 import { useApp } from '../../contexts/AppContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
+import NotificationCenter from '../notifications/NotificationCenter';
 import { ActivePage } from '../../types';
 
 const pageLabels: Record<ActivePage, string> = {
+  'home': 'Beranda',
   'dashboard': 'Dasbor',
   'ai-analysis': 'Analisis AI',
   'history': 'Riwayat',
@@ -15,9 +17,11 @@ const pageLabels: Record<ActivePage, string> = {
 export default function Header() {
   const { activePage, setSidebarOpen, setActivePage } = useApp();
   const { user, signOut } = useAuth();
-  const { notifications } = useNotification();
+  const { notifications, unreadCount } = useNotification();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const notificationRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -49,14 +53,23 @@ export default function Header() {
       </div>
 
       <div className="flex items-center gap-3">
-        <button className="relative p-2 rounded-xl hover:bg-black/5 transition-colors text-gray-500 group">
-          <Bell className="w-5 h-5 transition-transform group-hover:rotate-12" />
-          {notifications.length > 0 && (
-            <span className="absolute top-1 right-1 min-w-[16px] h-4 bg-red-600 rounded-full flex items-center justify-center border-2 border-[#FBF9F4]">
-              <span className="text-white text-[9px] font-black leading-none px-0.5">{notifications.length}</span>
-            </span>
-          )}
-        </button>
+        <div className="relative" ref={notificationRef}>
+          <button
+            onClick={() => setNotificationCenterOpen(!notificationCenterOpen)}
+            className="relative p-2 rounded-xl hover:bg-black/5 transition-colors text-gray-500 group"
+          >
+            <Bell className="w-5 h-5 transition-transform group-hover:rotate-12" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 min-w-[16px] h-4 bg-red-600 rounded-full flex items-center justify-center border-2 border-[#FBF9F4]">
+                <span className="text-white text-[9px] font-black leading-none px-0.5">{unreadCount}</span>
+              </span>
+            )}
+          </button>
+          <NotificationCenter
+            isOpen={notificationCenterOpen}
+            onClose={() => setNotificationCenterOpen(false)}
+          />
+        </div>
 
         <div className="relative" ref={dropdownRef}>
           <button

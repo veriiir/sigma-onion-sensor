@@ -24,9 +24,11 @@ function toDate(value?: string) {
 }
 
 // FIX: Mengambil 1 data paling baru secara global dari database tanpa filter land_id/user_id
-async function fetchLatestReading(): Promise<SensorReading | null> {
+// Menggunakan tabel yang sesuai berdasarkan system_type
+async function fetchLatestReading(systemType: SystemType): Promise<SensorReading | null> {
+  const tableName = systemType === 'portable' ? 'sensor_readings_portable' : 'sensor_readings_panel';
   const { data, error } = await supabase
-    .from('sensor_readings')
+    .from(tableName)
     .select('*')
     .order('created_at', { ascending: false })
     .limit(1)
@@ -67,7 +69,7 @@ export function useSensorData(systemType: SystemType, landId: LandId) {
 
     setLoading(true);
     try {
-      const latest = await fetchLatestReading();
+      const latest = await fetchLatestReading(systemType);
 
       // FIX PEMUTUS DUMMY ACAK: Jika DB kosong / koneksi Vercel putus, kunci di angka 0 dan pH 7
       if (!latest) {
@@ -93,7 +95,7 @@ export function useSensorData(systemType: SystemType, landId: LandId) {
       setIsDemoData(false);
 
       checkCritical(latest).forEach(msg =>
-        push({ type: 'error', title: 'Nilai Sensor Kritis!', message: msg, duration: 8000 })
+        push({ type: 'error', title: 'Nilai Sensor Kritis!', message: msg })
       );
 
       if (showFeedback) {
@@ -116,50 +118,51 @@ export function useSensorData(systemType: SystemType, landId: LandId) {
   }, [refreshSensorData]);
 
   // FIX: Realtime Listener Global Tanpa Filter Kolom land_id agar transmisi Dani terbaca instan
+  // Menggunakan tabel yang sesuai berdasarkan system_type
   useEffect(() => {
     if (!user) return;
 
-    console.log(`[REALTIME] Mengaktifkan listener global tanpa filter untuk memantau data transmisi terbaru.`);
+    const tableName = systemType === 'portable' ? 'sensor_readings_portable' : 'sensor_readings_panel';
+    console.log(`[REALTIME] Mengaktifkan listener global tanpa filter untuk memantau data transmisi terbaru dari tabel ${tableName}.`);
 
     const channel = supabase
-      .channel('sensor-readings-global-realtime')
+      .channel(`sensor-realtime-${systemType}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'sensor_readings'
+          table: tableName
         },
         (payload) => {
           const newReading = payload.new as SensorReading;
-          console.log("Sukses! Ada transmisi data sensor baru masuk ke database:", newReading);
+          console.log(`Sukses! Ada transmisi data sensor baru masuk ke database (${tableName}):`, newReading);
           
           setSensorData(newReading);
           setLastUpdated(toDate(newReading.created_at));
           setIsDemoData(false);
 
           checkCritical(newReading).forEach(msg =>
-            push({ type: 'error', title: 'Nilai Sensor Kritis!', message: msg, duration: 8000 })
+            push({ type: 'error', title: 'Nilai Sensor Kritis!', message: msg })
           );
 
           push({
             type: 'success',
             title: 'Data Baru Terdeteksi!',
             message: 'Kondisi sensor diperbarui dari database secara live.',
-            duration: 4000
           });
         }
       )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          console.log('[REALTIME] Jalur global untuk tabel sensor_readings aktif.');
+          console.log(`[REALTIME] Jalur global untuk tabel ${tableName} aktif.`);
         }
       });
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, push]);
+  }, [user, systemType, push]);
 
   useEffect(() => {
     if (timerRef.current) clearInterval(timerRef.current);

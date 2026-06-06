@@ -107,8 +107,11 @@ Deno.serve(async (req: Request) => {
       requireEnv("SUPABASE_SERVICE_ROLE_KEY"),
     );
 
+    // Insert ke tabel yang sesuai berdasarkan system_type
+    const tableName = systemType === "portable" ? "sensor_readings_portable" : "sensor_readings_panel";
+    
     const { data, error } = await supabase
-      .from("sensor_readings")
+      .from(tableName)
       .insert(reading)
       .select("*")
       .single();

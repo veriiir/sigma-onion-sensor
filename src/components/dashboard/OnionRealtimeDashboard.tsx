@@ -1,24 +1,24 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { SensorReading } from '../../types';
+import { SensorReading, SystemType } from '../../types';
 import { 
   Droplets, FlaskConical, Thermometer, 
   Smartphone, Activity, RefreshCw, AlertCircle 
 } from 'lucide-react';
 
 interface OnionRealtimeDashboardProps {
-  targetDeviceId?: string;
   landId?: string;
+  systemType?: SystemType;
 }
 
 export default function OnionRealtimeDashboard({ 
-  targetDeviceId = "onion-field-panel-01",
-  landId = "lahan1" 
+  landId = "lahan1",
+  systemType = 'panel'
 }: OnionRealtimeDashboardProps) {
   
   // FIX: Mengunci inisialisasi awal pada angka 0 (Bukan data random)
   const [sensorData, setSensorData] = useState<SensorReading>({
-    system_type: 'panel',
+    system_type: systemType,
     land_id: landId,
     nitrogen: 0,
     phosphorus: 0,
@@ -36,11 +36,13 @@ export default function OnionRealtimeDashboard({
   const [pulseEffect, setPulseEffect] = useState(false);
 
   // FIX: Tarik 1 baris teratas data paling teranyar secara global bebas filter
+  // Menggunakan tabel yang sesuai berdasarkan system_type
   const fetchLatestData = async () => {
     try {
       setLoading(true);
+      const tableName = systemType === 'portable' ? 'sensor_readings_portable' : 'sensor_readings_panel';
       const { data, error: dbError } = await supabase
-        .from('sensor_readings')
+        .from(tableName)
         .select('*')
         .order('created_at', { ascending: false })
         .limit(1)
@@ -63,20 +65,21 @@ export default function OnionRealtimeDashboard({
   useEffect(() => {
     fetchLatestData();
 
-    console.log("[DASHBOARD] Membuka koneksi Realtime Global untuk tabel sensor_readings...");
+    const tableName = systemType === 'portable' ? 'sensor_readings_portable' : 'sensor_readings_panel';
+    console.log(`[DASHBOARD] Membuka koneksi Realtime Global untuk tabel ${tableName}...`);
 
     const channel = supabase
-      .channel('sensor-readings-direct-global')
+      .channel(`sensor-dashboard-${systemType}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'sensor_readings'
+          table: tableName
         },
         (payload) => {
           const newReading = payload.new as SensorReading;
-          console.log("Dashboard mendeteksi data baru masuk secara global:", newReading);
+          console.log(`Dashboard mendeteksi data baru masuk secara global (${tableName}):`, newReading);
           
           setSensorData(newReading);
           
@@ -96,7 +99,7 @@ export default function OnionRealtimeDashboard({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [systemType]);
 
   const getSoilStatus = () => {
     if (!sensorData.created_at) {
@@ -138,7 +141,7 @@ export default function OnionRealtimeDashboard({
             )}
           </div>
           <p className="text-xs text-gray-500 mt-1 flex items-center gap-1.5">
-            <Smartphone className="w-3.5 h-3.5" /> Sumber Database: <span className="font-semibold text-emerald-600 font-mono">sensor_readings (Global)</span>
+            <Smartphone className="w-3.5 h-3.5" /> Sumber Database: <span className="font-semibold text-emerald-600 font-mono">{systemType === 'portable' ? 'sensor_readings_portable' : 'sensor_readings_panel'}</span>
             {sensorData.land_id && (
               <>
                 <span className="text-gray-300">|</span>

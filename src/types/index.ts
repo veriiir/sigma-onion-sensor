@@ -97,7 +97,7 @@ export interface LandValidationResult {
   withinRadius: boolean;
 }
 
-export type ActivePage = 'dashboard' | 'ai-analysis' | 'history' | 'settings';
+export type ActivePage = 'home' | 'dashboard' | 'ai-analysis' | 'history' | 'settings';
 
 // ── AI Pipeline Types ────────────────────────────────────────────────────────
 

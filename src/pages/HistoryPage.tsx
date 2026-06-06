@@ -253,8 +253,10 @@ export default function HistoryPage() {
 
     if (tab === 'sensor') {
       // FIX: Menghapus filter pengunci .eq('user_id', user.id) agar data Dani terbaca
+      // Menggunakan tabel yang sesuai berdasarkan system_type
+      const tableName = historyViewMode === 'portable' ? 'sensor_readings_portable' : 'sensor_readings_panel';
       supabase
-        .from('sensor_readings')
+        .from(tableName)
         .select('*')
         .eq('system_type', historyViewMode)
         .gte('created_at', startIso)

@@ -26,8 +26,9 @@ async function fetchLatestSensor(
   systemType: SystemType,
   landId: LandId,
 ): Promise<SensorReading | null> {
+  const tableName = systemType === 'portable' ? 'sensor_readings_portable' : 'sensor_readings_panel';
   const { data } = await supabase
-    .from('sensor_readings')
+    .from(tableName)
     .select('*')
     .eq('user_id', userId)
     .eq('system_type', systemType)

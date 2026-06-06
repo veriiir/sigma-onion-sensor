@@ -342,7 +342,7 @@ export default function AIAnalysisPage() {
     setSaved(true);
     push({ type: 'success', title: 'Analisis Disimpan', message: `Hasil deteksi "${detection.label}" berhasil disimpan ke riwayat.` });
     if (severity === 'high') {
-      push({ type: 'error', title: 'Penyakit Berat Terdeteksi!', message: `${detection.label} terdeteksi (${detection.confidence.toFixed(1)}%). Segera ambil tindakan.`, duration: 8000 });
+      push({ type: 'error', title: 'Penyakit Berat Terdeteksi!', message: `${detection.label} terdeteksi (${detection.confidence.toFixed(1)}%). Segera ambil tindakan.` });
     }
     setTimeout(() => setSaved(false), 3000);
   }

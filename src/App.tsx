@@ -4,12 +4,14 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AppProvider, useApp } from './contexts/AppContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import AuthPage from './pages/AuthPage';
+import HomePage from './pages/HomePage';
 import DashboardPage from './pages/DashboardPage';
 import AIAnalysisPage from './pages/AIAnalysisPage';
 import HistoryPage from './pages/HistoryPage';
 import SettingsPage from './pages/SettingsPage';
 import MainLayout from './components/layout/MainLayout';
-import ToastContainer from './components/notifications/ToastContainer';
+// DISABLED: ToastContainer - Diganti dengan NotificationCenter di Header
+// import ToastContainer from './components/notifications/ToastContainer';
 
 function PageContent() {
   const { activePage } = useApp();
@@ -23,6 +25,7 @@ function PageContent() {
         exit={{ opacity: 0, y: -12 }}
         transition={{ duration: 0.25, ease: 'easeOut' }}
       >
+        {activePage === 'home' && <HomePage />}
         {activePage === 'dashboard' && <DashboardPage />}
         {activePage === 'ai-analysis' && <AIAnalysisPage />}
         {activePage === 'history' && <HistoryPage />}
@@ -88,7 +91,7 @@ function AppInner() {
         <MainLayout>
           <PageContent />
         </MainLayout>
-        <ToastContainer />
+        {/* DISABLED: ToastContainer moved to NotificationCenter in Header */}
       </AppProvider>
     </NotificationProvider>
   );

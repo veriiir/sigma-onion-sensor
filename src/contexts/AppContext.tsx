@@ -25,7 +25,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [activeMode, setActiveModeState] = useState<SystemType>('portable');
   const [selectedLand, setSelectedLandState] = useState<LandId>('lahan1');
-  const [activePage, setActivePage] = useState<ActivePage>('dashboard');
+  const [activePage, setActivePage] = useState<ActivePage>('home');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifEnabled, setNotifEnabledState] = useState(true);
   const [autoSync, setAutoSyncState] = useState(true);
