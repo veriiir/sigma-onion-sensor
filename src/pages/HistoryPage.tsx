@@ -252,12 +252,12 @@ export default function HistoryPage() {
     const endIso = `${endDate}T23:59:59.999Z`;
 
     if (tab === 'sensor') {
-      // FIX: Menghapus filter pengunci .eq('user_id', user.id) agar data Dani terbaca
       // Menggunakan tabel yang sesuai berdasarkan system_type
       const tableName = historyViewMode === 'portable' ? 'sensor_readings_portable' : 'sensor_readings_panel';
       supabase
         .from(tableName)
         .select('*')
+        .eq('user_id', user.id)
         .eq('system_type', historyViewMode)
         .gte('created_at', startIso)
         .lte('created_at', endIso)
@@ -268,10 +268,10 @@ export default function HistoryPage() {
           setLoading(false);
         });
     } else {
-      // FIX: Menghapus filter pengunci .eq('user_id', user.id) di pencarian AI juga
       supabase
         .from('ai_analysis')
         .select('*')
+        .eq('user_id', user.id)
         .eq('system_type', historyViewMode)
         .gte('created_at', startIso)
         .lte('created_at', endIso)

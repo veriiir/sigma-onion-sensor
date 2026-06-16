@@ -81,11 +81,6 @@ const urgencyLabel: Record<ActionStep['urgency'], string> = {
   routine: 'Rutin',
 };
 
-const LAND_OPTIONS = [
-  { value: 'lahan1', label: 'Lahan 1' },
-  { value: 'lahan2', label: 'Lahan 2' },
-  { value: 'lahan3', label: 'Lahan 3' },
-];
 
 type LocationSource = 'gps' | 'exif' | 'manual' | null;
 
@@ -779,9 +774,14 @@ function LocationCard({
             <select
               value={manualLand}
               onChange={e => onManualLandChange(e.target.value)}
-              className="w-full appearance-none bg-white border border-black/5 rounded-2xl px-5 py-4 text-[13px] font-black uppercase tracking-widest italic text-tertiary focus:outline-none focus:ring-4 focus:ring-tertiary/10 transition-all pr-12 shadow-sm"
+              disabled={lands.length === 0}
+              className="w-full appearance-none bg-white border border-black/5 rounded-2xl px-5 py-4 text-[13px] font-black uppercase tracking-widest italic text-tertiary focus:outline-none focus:ring-4 focus:ring-tertiary/10 transition-all pr-12 shadow-sm disabled:opacity-50"
             >
-              {LAND_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              {lands.length > 0 ? (
+                lands.map(o => <option key={o.id} value={o.id}>{o.label}</option>)
+              ) : (
+                <option value="">Belum Ada Lahan</option>
+              )}
             </select>
             <ChevronDown className="w-4 h-4 text-tertiary/30 absolute right-4 top-1/2 -translate-y-1/2" />
           </div>

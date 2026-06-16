@@ -3,14 +3,6 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Land, LandValidationResult, SystemType } from '../types';
 
-const DEFAULT_LANDS: Omit<Land, 'user_id' | 'created_at'>[] = [
-  { id: 'lahan1', label: 'Lahan 1', crop: 'Bawang Merah', system_type: 'panel', radius_m: 500 },
-  { id: 'lahan2', label: 'Lahan 2', crop: 'Bawang Merah', system_type: 'panel', radius_m: 500 },
-  { id: 'lahan3', label: 'Lahan 3', crop: 'Bawang Merah', system_type: 'panel', radius_m: 500 },
-  { id: 'lahan1', label: 'Lahan 1', crop: 'Bawang Merah', system_type: 'portable', radius_m: 500 },
-  { id: 'lahan2', label: 'Lahan 2', crop: 'Bawang Merah', system_type: 'portable', radius_m: 500 },
-  { id: 'lahan3', label: 'Lahan 3', crop: 'Bawang Merah', system_type: 'portable', radius_m: 500 },
-];
 
 function haversineM(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371000;
@@ -66,20 +58,7 @@ export function useLands(systemType?: SystemType) {
     if (systemType) q = q.eq('system_type', systemType);
     const { data } = await q.order('id');
 
-    if (data && data.length > 0) {
-      setLands(data);
-    } else {
-      // Seed default lands for new users
-      const toInsert = DEFAULT_LANDS
-        .filter(l => !systemType || l.system_type === systemType)
-        .map(l => ({ ...l, user_id: user.id }));
-
-      const { data: inserted } = await supabase
-        .from('lands')
-        .upsert(toInsert, { onConflict: 'id,user_id,system_type' })
-        .select();
-      setLands(inserted ?? []);
-    }
+    setLands(data ?? []);
     setLoading(false);
   }, [user, systemType]);
 

@@ -2,21 +2,18 @@ import React, { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Smartphone, MonitorSpeaker,
-  BrainCircuit, Camera, AlertTriangle, ShieldAlert, CheckCircle, Clock, MapPin, RefreshCw,
+  BrainCircuit, Camera, AlertTriangle, ShieldAlert, CheckCircle, Clock, MapPin, RefreshCw, Plus,
 } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useSensorData } from '../hooks/useSensorData';
+import { useLands } from '../hooks/useLands';
 import SensorCard from '../components/dashboard/SensorCard';
 import LandSelector from '../components/dashboard/LandSelector';
+import LandAddModal from '../components/dashboard/LandAddModal';
 import { SENSOR_CONFIGS } from '../constants/sensors';
 import { SensorReading, Land, AIAnalysisRecord, SystemType, LandId } from '../types';
 import { supabase } from '../lib/supabase';
-
-const INITIAL_LANDS: Land[] = [
-  { id: 'lahan1', label: 'Lahan 1', area: '0.5 Ha', crop: 'Bawang Merah', system_type: 'panel', user_id: '' },
-  { id: 'lahan2', label: 'Lahan 2', area: '0.8 Ha', crop: 'Bawang Putih', system_type: 'panel', user_id: '' },
-];
 
 const DISEASE_SEVERITY: Record<string, 'high' | 'medium' | 'none'> = {
   'Alternaria Porri': 'high',
@@ -117,6 +114,9 @@ function AIStatusBanner({ systemType, landId }: { systemType: SystemType; landId
 
 function PortableDashboard() {
   const { activeMode, selectedLand, setSelectedLand } = useApp();
+  const { lands, loading: landsLoading, refetch } = useLands(activeMode);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
   const {
     sensorData,
     loading,
@@ -124,44 +124,50 @@ function PortableDashboard() {
   } = useSensorData(activeMode, selectedLand);
   
   const prevDataRef = useRef<SensorReading | null>(null);
-  const [lands, setLands] = useState<Land[]>(() => {
-    const saved = localStorage.getItem('sigma_lands_data');
-    return saved ? JSON.parse(saved) : INITIAL_LANDS;
-  });
 
   useEffect(() => {
-    const saved = localStorage.getItem('sigma_lands_data');
-    if (saved) setLands(JSON.parse(saved));
-  }, [selectedLand]);
-
-  useEffect(() => {
-    async function fetchLands() {
-      const { data } = await supabase.from('lands').select('*');
-      if (!data) return;
-      const merged = [...INITIAL_LANDS, ...data];
-      setLands(merged);
-      localStorage.setItem('sigma_lands_data', JSON.stringify(merged));
-    }
-    fetchLands();
-  }, []);
-
-  useEffect(() => {
-    const portableLands = lands.filter(l => l.system_type === 'portable');
-    if (!portableLands.length) return;
-    const exists = portableLands.some(l => l.id === selectedLand);
-    if (!exists) setSelectedLand(portableLands[0].id);
+    if (lands.length === 0) return;
+    const exists = lands.some(l => l.id === selectedLand);
+    if (!exists) setSelectedLand(lands[0].id);
   }, [lands, selectedLand, setSelectedLand]);
 
-  // Safety check: if sensorData is not ready, return early
-  if (!sensorData) {
+  if (landsLoading) {
     return (
-      <div className="space-y-5">
-        <div className="text-center py-12">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-4">
-            <RefreshCw className="w-5 h-5 text-gray-400 animate-spin" />
-          </div>
-          <p className="text-sm text-gray-500">Memuat data sensor...</p>
+      <div className="flex items-center justify-center py-16">
+        <RefreshCw className="w-6 h-6 text-gray-400 animate-spin" />
+      </div>
+    );
+  }
+
+  if (lands.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] bg-gray-50 border border-gray-100 rounded-[2rem] p-8 md:p-16 text-center animate-in fade-in duration-300 shadow-xl shadow-black/5">
+        <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-6 border-2 border-dashed border-gray-300">
+          <MapPin className="w-8 h-8 text-gray-400" />
         </div>
+        <h3 className="text-xl font-black text-gray-800 uppercase tracking-tight mb-2">
+          Belum Ada Lokasi Tersimpan
+        </h3>
+        <p className="text-sm text-gray-500 max-w-sm mb-8 font-medium">
+          Anda belum memiliki lokasi yang tersimpan di sistem Portable Anda. Mau tambah lokasi sekarang?
+        </p>
+        <button
+          onClick={() => setIsAddModalOpen(true)}
+          className="flex items-center gap-2 px-6 py-3 bg-primary text-white font-black rounded-2xl shadow-xl shadow-primary/30 hover:opacity-90 active:scale-95 transition-all uppercase text-xs tracking-wider"
+        >
+          <Plus className="w-4 h-4" />
+          Tambah Lokasi Baru
+        </button>
+        
+        <LandAddModal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          onSuccess={(newLand) => {
+            refetch();
+            setSelectedLand(newLand.id);
+          }}
+          systemType={activeMode}
+        />
       </div>
     );
   }
@@ -169,8 +175,7 @@ function PortableDashboard() {
   const prevData = prevDataRef.current;
   prevDataRef.current = sensorData;
 
-  const currentLandName = lands.find(l => l.id === selectedLand && l.system_type === activeMode)?.label || 
-    (activeMode === 'portable' ? 'Lokasi Portable' : 'Lokasi');
+  const currentLandName = lands.find(l => l.id === selectedLand)?.label || 'Lokasi Portable';
 
   return (
     <div className="space-y-5">
@@ -209,7 +214,7 @@ function PortableDashboard() {
         <div>
           <div className="flex items-center justify-between mb-4 border-b border-black/5 pb-2">
             <h3 className="text-base font-black text-gray-800 tracking-tighter uppercase leading-none">
-              Data Sensor <span className="text-primary">{currentLandName || 'Lokasi'}</span>
+              Data Sensor <span className="text-primary">{currentLandName}</span>
             </h3>
             <span className="text-[10px] font-black text-neutral-muted bg-gray-50 border px-3 py-1 rounded-full uppercase italic">7 Parameter Terdeteksi</span>
           </div>
@@ -226,51 +231,59 @@ function PortableDashboard() {
 
 function PanelDashboard() {
   const { activeMode, selectedLand, setSelectedLand } = useApp();
+  const { lands, loading: landsLoading, refetch } = useLands(activeMode);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
   const { sensorData } = useSensorData(activeMode, selectedLand);
   
   const prevDataRef = useRef<SensorReading | null>(null);
-  const [lands, setLands] = useState<Land[]>(() => {
-    const saved = localStorage.getItem('sigma_lands_data');
-    return saved ? JSON.parse(saved) : INITIAL_LANDS;
-  });
 
-  // FIX: Fetch lands dari database sekali saat mount
   useEffect(() => {
-    async function fetchLands() {
-      try {
-        const { data } = await supabase.from('lands').select('*');
-        if (!data) return;
-        const merged = [...INITIAL_LANDS, ...data];
-        setLands(merged);
-        localStorage.setItem('sigma_lands_data', JSON.stringify(merged));
-      } catch (error) {
-        console.error('Error fetching lands:', error);
-      }
-    }
-    fetchLands();
-  }, []);
-
-  // FIX: Validasi selectedLand terhadap panel lands - hanya jalankan jika lands sudah ada
-  useEffect(() => {
-    const panelLands = lands.filter(l => l.system_type === 'panel');
-    if (!panelLands.length) return;
+    if (lands.length === 0) return;
     
-    const exists = panelLands.some(l => l.id === selectedLand);
+    const exists = lands.some(l => l.id === selectedLand);
     if (!exists) {
-      setSelectedLand(panelLands[0].id);
+      setSelectedLand(lands[0].id);
     }
-  }, [lands]); // Remove selectedLand dari dependency untuk hindari infinite loop
+  }, [lands, selectedLand, setSelectedLand]);
 
-  // Safety check: if sensorData is not ready, return early
-  if (!sensorData) {
+  if (landsLoading) {
     return (
-      <div className="space-y-5">
-        <div className="text-center py-12">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-4">
-            <RefreshCw className="w-5 h-5 text-gray-400 animate-spin" />
-          </div>
-          <p className="text-sm text-gray-500">Memuat data sensor...</p>
+      <div className="flex items-center justify-center py-16">
+        <RefreshCw className="w-6 h-6 text-gray-400 animate-spin" />
+      </div>
+    );
+  }
+
+  if (lands.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] bg-gray-50 border border-gray-100 rounded-[2rem] p-8 md:p-16 text-center animate-in fade-in duration-300 shadow-xl shadow-black/5">
+        <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-6 border-2 border-dashed border-gray-300">
+          <MapPin className="w-8 h-8 text-gray-400" />
         </div>
+        <h3 className="text-xl font-black text-gray-800 uppercase tracking-tight mb-2">
+          Belum Ada Lahan Tersimpan
+        </h3>
+        <p className="text-sm text-gray-500 max-w-sm mb-8 font-medium">
+          Anda belum memiliki lahan yang tersimpan di sistem Panel Anda. Mau tambah lahan sekarang?
+        </p>
+        <button
+          onClick={() => setIsAddModalOpen(true)}
+          className="flex items-center gap-2 px-6 py-3 bg-primary text-white font-black rounded-2xl shadow-xl shadow-primary/30 hover:opacity-90 active:scale-95 transition-all uppercase text-xs tracking-wider"
+        >
+          <Plus className="w-4 h-4" />
+          Tambah Lahan Baru
+        </button>
+        
+        <LandAddModal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          onSuccess={(newLand) => {
+            refetch();
+            setSelectedLand(newLand.id);
+          }}
+          systemType={activeMode}
+        />
       </div>
     );
   }
@@ -278,7 +291,7 @@ function PanelDashboard() {
   const prevData = prevDataRef.current;
   prevDataRef.current = sensorData;
 
-  const currentLand = lands.find(l => l.id === selectedLand) || lands.find(l => l.system_type === 'panel') || lands[0];
+  const currentLand = lands.find(l => l.id === selectedLand) || lands[0];
 
   return (
     <div className="space-y-5">
@@ -305,7 +318,7 @@ function PanelDashboard() {
         <div>
           <div className="flex items-center justify-between mb-4 border-b border-black/5 pb-2">
             <h3 className="text-base font-black text-gray-800 tracking-tighter uppercase leading-none">
-              Data Sensor <span className="text-primary">{currentLand?.label || 'Lokasi'}</span>
+              Data Sensor <span className="text-primary">{currentLand?.label}</span>
             </h3>
             <span className="text-[10px] font-black text-neutral-muted bg-gray-50 border px-3 py-1 rounded-full uppercase italic">7 Parameter Terdeteksi</span>
           </div>

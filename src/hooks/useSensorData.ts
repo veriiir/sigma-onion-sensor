@@ -25,11 +25,13 @@ function toDate(value?: string) {
 
 // FIX: Mengambil 1 data paling baru secara global dari database tanpa filter land_id/user_id
 // Menggunakan tabel yang sesuai berdasarkan system_type
-async function fetchLatestReading(systemType: SystemType): Promise<SensorReading | null> {
+async function fetchLatestReading(systemType: SystemType, userId: string, landId: LandId): Promise<SensorReading | null> {
   const tableName = systemType === 'portable' ? 'sensor_readings_portable' : 'sensor_readings_panel';
   const { data, error } = await supabase
     .from(tableName)
     .select('*')
+    .eq('user_id', userId)
+    .eq('land_id', landId)
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -69,7 +71,7 @@ export function useSensorData(systemType: SystemType, landId: LandId) {
 
     setLoading(true);
     try {
-      const latest = await fetchLatestReading(systemType);
+      const latest = await fetchLatestReading(systemType, user.id, landId);
 
       // FIX PEMUTUS DUMMY ACAK: Jika DB kosong / koneksi Vercel putus, kunci di angka 0 dan pH 7
       if (!latest) {
@@ -123,20 +125,25 @@ export function useSensorData(systemType: SystemType, landId: LandId) {
     if (!user) return;
 
     const tableName = systemType === 'portable' ? 'sensor_readings_portable' : 'sensor_readings_panel';
-    console.log(`[REALTIME] Mengaktifkan listener global tanpa filter untuk memantau data transmisi terbaru dari tabel ${tableName}.`);
+    console.log(`[REALTIME] Mengaktifkan listener untuk memantau data transmisi terbaru dari tabel ${tableName} untuk user ${user.id} dan lahan ${landId}.`);
 
     const channel = supabase
-      .channel(`sensor-realtime-${systemType}`)
+      .channel(`sensor-realtime-${systemType}-${landId}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: tableName
+          table: tableName,
+          filter: `user_id=eq.${user.id}`
         },
         (payload) => {
           const newReading = payload.new as SensorReading;
-          console.log(`Sukses! Ada transmisi data sensor baru masuk ke database (${tableName}):`, newReading);
+          if (newReading.land_id !== landId) {
+            console.log(`[REALTIME] Mengabaikan data sensor dari lahan lain.`, newReading);
+            return;
+          }
+          console.log(`Sukses! Ada transmisi data sensor baru untuk lahan ${landId}:`, newReading);
           
           setSensorData(newReading);
           setLastUpdated(toDate(newReading.created_at));
@@ -155,14 +162,14 @@ export function useSensorData(systemType: SystemType, landId: LandId) {
       )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          console.log(`[REALTIME] Jalur global untuk tabel ${tableName} aktif.`);
+          console.log(`[REALTIME] Jalur untuk tabel ${tableName} aktif.`);
         }
       });
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, systemType, push]);
+  }, [user, systemType, landId, push]);
 
   useEffect(() => {
     if (timerRef.current) clearInterval(timerRef.current);

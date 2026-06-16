@@ -111,7 +111,7 @@ export default function AuthPage() {
       const { error: err } = await signUp(email, password, fullName, systemType);
       if (err) {
         if (err.toLowerCase().includes('already registered') || err.toLowerCase().includes('sudah terdaftar')) {
-          setError('Email ini sudah terdaftar. Silakan masuk.');
+          setError('Akun sudah terdaftar. Silakan buat akun baru dengan email yang berbeda.');
         } else {
           setError('Pendaftaran gagal. Silakan coba lagi.');
         }
