@@ -1,8 +1,49 @@
 import React from 'react';
-import { MapPin, ChevronDown, Plus, Check } from 'lucide-react';
+import { MapPin, ChevronDown, Plus, Check, Trash } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { deleteLand } from '../../services/landsService';
 import { LandId, SystemType, Land } from '../../types';
 import { useLands } from '../../hooks/useLands';
 import LandAddModal from './LandAddModal';
+
+interface DeleteConfirmationModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  landLabel: string;
+}
+
+function DeleteConfirmationModal({
+  isOpen, onClose, onConfirm, landLabel,
+}: DeleteConfirmationModalProps) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]">
+      <div className="bg-white rounded-2xl p-6 shadow-xl max-w-sm w-full mx-4 text-center">
+        <Trash className="w-10 h-10 text-red-500 mx-auto mb-4" />
+        <h3 className="text-xl font-bold text-gray-800 mb-2">Hapus Lahan Ini?</h3>
+        <p className="text-sm text-gray-600 mb-6">
+          Anda yakin ingin menghapus <strong>{landLabel}</strong>? Tindakan ini tidak dapat dibatalkan.
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+          >
+            Batal
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 px-4 py-2 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 transition-colors"
+          >
+            Hapus
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 interface LandSelectorProps {
   selectedLand: LandId;
@@ -11,8 +52,11 @@ interface LandSelectorProps {
 }
 
 export default function LandSelector({ selectedLand, onSelect, systemType }: LandSelectorProps) {
+  const { user } = useAuth();
   const [open, setOpen] = React.useState(false);
   const [showAddModal, setShowAddModal] = React.useState(false);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = React.useState(false);
+  const [landToDelete, setLandToDelete] = React.useState<Land | null>(null);
   const { lands, refetch } = useLands();
   
   const ref = React.useRef<HTMLDivElement>(null);
@@ -30,6 +74,27 @@ export default function LandSelector({ selectedLand, onSelect, systemType }: Lan
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
+  const handleDeleteLand = async () => {
+    if (!user || !landToDelete) return;
+    try {
+      await deleteLand(user.id, landToDelete.id, landToDelete.system_type);
+      refetch();
+      setShowDeleteConfirmModal(false);
+      // If the deleted land was the selected one, select the first available land
+      if (selectedLand === landToDelete.id) {
+        const remainingLands = currentViewLands.filter(l => l.id !== landToDelete.id);
+        if (remainingLands.length > 0) {
+          onSelect(remainingLands[0].id);
+        } else {
+          onSelect(''); // No lands left, clear selection
+        }
+      }
+    } catch (error) {
+      console.error("Error deleting land:", error);
+      // TODO: Show an error message to the user
+    }
+  };
+
   return (
     <div className="relative" ref={ref}>
       <button
@@ -45,7 +110,7 @@ export default function LandSelector({ selectedLand, onSelect, systemType }: Lan
             {selected ? selected.label : (isPortable ? 'Tidak ada lokasi' : 'Tidak ada lahan')}
           </p>
         </div>
-        <ChevronDown className={`w-3 h-3 text-gray-400 ml-auto transition-transform ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-3 h-3 text-gray-400 ml-3 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
@@ -61,22 +126,34 @@ export default function LandSelector({ selectedLand, onSelect, systemType }: Lan
               <p className="text-xs text-gray-400 text-center py-4">Belum ada {isPortable ? 'lokasi' : 'lahan'} tersimpan</p>
             ) : (
               currentViewLands.map(land => (
-                <button
-                  key={land.id}
-                  onClick={() => { onSelect(land.id); setOpen(false); }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 transition-colors ${selectedLand === land.id ? 'bg-primary/10' : 'hover:bg-gray-50'}`}
-                >
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${selectedLand === land.id ? 'bg-primary text-white' : 'bg-gray-100 text-gray-400'}`}>
-                    <MapPin className="w-4 h-4" />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className={`text-sm font-bold ${selectedLand === land.id ? 'text-primary' : 'text-gray-700'}`}>{land.label}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{isPortable ? 'Portable' : `${land.crop} ${land.area ? `• ${land.area}` : ''}`}</p>
-                  </div>
-                  {selectedLand === land.id && <Check className="w-4 h-4 text-primary" />}
-                </button>
-              ))
-            )}
+                <div key={land.id} className="flex items-center group">
+                  <button
+                    onClick={() => { onSelect(land.id); setOpen(false); }}
+                    className={`flex-1 flex items-center gap-3 px-4 py-3 transition-colors ${selectedLand === land.id ? 'bg-primary/10' : 'hover:bg-gray-50'}`}
+                  >
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${selectedLand === land.id ? 'bg-primary text-white' : 'bg-gray-100 text-gray-400'}`}>
+                      <MapPin className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className={`text-sm font-bold ${selectedLand === land.id ? 'text-primary' : 'text-gray-700'}`}>{land.label}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{isPortable ? 'Portable' : `${land.crop} ${land.area ? `• ${land.area}` : ''}`}</p>
+                    </div>
+                    {selectedLand === land.id && <Check className="w-4 h-4 text-primary" />}
+                  </button>
+                   <button
+                     onClick={(e) => {
+                       e.stopPropagation(); // Prevent triggering the land selection
+                       setLandToDelete(land);
+                       setShowDeleteConfirmModal(true);
+                     }}
+                     className="p-2 mr-2 rounded-lg text-gray-400 hover:text-red-500 transition-colors opacity-100"
+                     title="Hapus Lahan"
+                   >
+                     <Trash className="w-4 h-4" />
+                   </button>
+                 </div>
+               ))
+             )}
           </div>
         </div>
       )}
@@ -89,6 +166,13 @@ export default function LandSelector({ selectedLand, onSelect, systemType }: Lan
           onSelect(newLand.id);
         }} 
         systemType={systemType} 
+      />
+
+      <DeleteConfirmationModal
+        isOpen={showDeleteConfirmModal}
+        onClose={() => setShowDeleteConfirmModal(false)}
+        onConfirm={handleDeleteLand}
+        landLabel={landToDelete?.label || ''}
       />
     </div>
   );

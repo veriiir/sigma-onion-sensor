@@ -65,7 +65,14 @@ export async function fileToBase64(file: File): Promise<string> {
 
 export function useAnalysisSession(systemType: SystemType, landId: LandId) {
   const [session, setSessionState] = useState<PersistedSession>(
-    () => loadSession(systemType, landId),
+    () => {
+        const loaded = loadSession(systemType, landId);
+        // If no land is selected or it's the default, set manualLand to current landId
+        if (loaded.manualLand === 'lahan1' && landId !== 'lahan1') {
+            return { ...loaded, manualLand: landId };
+        }
+        return loaded;
+    }
   );
 
   const updateSession = useCallback((patch: Partial<PersistedSession>) => {
@@ -77,8 +84,9 @@ export function useAnalysisSession(systemType: SystemType, landId: LandId) {
   }, [systemType, landId]);
 
   const resetSession = useCallback(() => {
-    setSessionState(EMPTY_SESSION);
-    saveSession(systemType, landId, EMPTY_SESSION);
+    const freshSession = { ...EMPTY_SESSION, manualLand: landId };
+    setSessionState(freshSession);
+    saveSession(systemType, landId, freshSession);
   }, [systemType, landId]);
 
   return { session, updateSession, resetSession };

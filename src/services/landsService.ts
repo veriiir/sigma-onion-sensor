@@ -44,6 +44,17 @@ export async function createLand(
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) error;
   return data;
+}
+
+export async function deleteLand(userId: string, landId: string, systemType: SystemType): Promise<void> {
+  const { error } = await supabase
+    .from('lands')
+    .delete()
+    .eq('user_id', userId)
+    .eq('id', landId)
+    .eq('system_type', systemType);
+
+  if (error) throw error;
 }

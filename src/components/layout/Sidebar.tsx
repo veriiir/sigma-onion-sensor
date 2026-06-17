@@ -15,7 +15,7 @@ const modeItems: { mode: SystemType; label: string; subtitle: string; icon: Reac
 
 function SidebarContent({ onClose }: { onClose?: () => void }) {
   const { activePage, activeMode, setActiveMode, setActivePage } = useApp();
-  const { profile, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const { unreadCount } = useNotification();
   const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
 
@@ -187,7 +187,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-bold text-white truncate">{profile?.full_name || 'Petani'}</p>
-              <p className="text-[10px] text-white/50 truncate">{profile?.id ? profile.id.slice(0, 12) + '...' : 'User'}</p>
+              <p className="text-[10px] text-white/50 truncate">{user?.email || 'User'}</p>
             </div>
           </div>
         </div>

@@ -408,7 +408,14 @@ export default function AIAnalysisPage() {
       </div>
 
       {!detection && !analyzing && (
-        <div className="bg-white rounded-[2rem] border border-black/5 p-12 flex flex-col items-center gap-6 text-center shadow-xl shadow-black/5">
+        <motion.div
+          key={`analysis-initial-${activeMode}-${lands.length > 0 ? 'has-lands' : 'no-lands'}`}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -12 }}
+          transition={{ duration: 0.3 }}
+          className="bg-white rounded-[2rem] border border-black/5 p-12 flex flex-col items-center gap-6 text-center shadow-xl shadow-black/5"
+        >
           <div className="w-24 h-24 bg-primary/5 rounded-full flex items-center justify-center border-2 border-dashed border-primary/20">
             <Scan className="w-10 h-10 text-primary opacity-60" />
           </div>
@@ -422,28 +429,50 @@ export default function AIAnalysisPage() {
           <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleCameraInputChange} />
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
 
-          <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm">
-            <button
-              onClick={handleCameraCapture}
-              className="flex-1 flex items-center justify-center gap-2.5 bg-primary hover:bg-primary/90 text-white px-3 py-2.5 rounded-2xl transition-all shadow-xl shadow-primary/20 uppercase tracking-tighter"
-            >
-              <Camera className="w-4 h-4" />
-              Kamera
-            </button>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="flex-1 flex items-center justify-center gap-2.5 bg-white hover:bg-gray-50 text-gray-700 px-3 py-2.5 rounded-2xl transition-all border border-gray-100 uppercase tracking-tighter"
-            >
-              <Upload className="w-4 h-4 opacity-50" />
-              Unggah Foto
-            </button>
-          </div>
+          {lands.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 w-full max-w-sm">
+              <p className="text-sm text-gray-500">
+                Belum ada {activeMode === 'portable' ? 'lokasi' : 'lahan'} tersimpan. Tambahkan satu untuk memulai analisis.
+              </p>
+              <button
+                disabled
+                className="flex-1 flex items-center justify-center gap-2.5 bg-gray-200 text-gray-400 px-3 py-2.5 rounded-2xl cursor-not-allowed uppercase tracking-tighter"
+              >
+                <Camera className="w-4 h-4" />
+                Kamera
+              </button>
+              <button
+                disabled
+                className="flex-1 flex items-center justify-center gap-2.5 bg-gray-200 text-gray-400 px-3 py-2.5 rounded-2xl cursor-not-allowed uppercase tracking-tighter"
+              >
+                <Upload className="w-4 h-4 opacity-50" />
+                Unggah Foto
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm">
+              <button
+                onClick={handleCameraCapture}
+                className="flex-1 flex items-center justify-center gap-2.5 bg-primary hover:bg-primary/90 text-white px-3 py-2.5 rounded-2xl transition-all shadow-xl shadow-primary/20 uppercase tracking-tighter"
+              >
+                <Camera className="w-4 h-4" />
+                Kamera
+              </button>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="flex-1 flex items-center justify-center gap-2.5 bg-white hover:bg-gray-50 text-gray-700 px-3 py-2.5 rounded-2xl transition-all border border-gray-100 uppercase tracking-tighter"
+              >
+                <Upload className="w-4 h-4 opacity-50" />
+                Unggah Foto
+              </button>
+            </div>
+          )}
 
           <div className="flex items-center gap-2 text-xs text-gray-400 bg-gray-50 px-4 py-2 rounded-xl">
             <Info className="w-3.5 h-3.5 shrink-0" />
             Kamera menangkap GPS real-time. Galeri membaca metadata EXIF foto.
           </div>
-        </div>
+        </motion.div>
       )}
 
       {(detection || analyzing) && (

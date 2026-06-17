@@ -1,10 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
 import { Land, LandValidationResult, SystemType } from '../types';
-
+import { useLands as useLandsContext } from '../contexts/LandsContext';
 
 function haversineM(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  // ... (keep the same)
   const R = 6371000;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
@@ -19,6 +17,7 @@ export function validateLandCoords(
   lon: number,
   lands: Land[],
 ): LandValidationResult {
+  // ... (keep the same)
   const landsWithCoords = lands.filter(l => l.latitude != null && l.longitude != null);
 
   if (landsWithCoords.length === 0) {
@@ -46,23 +45,6 @@ export function validateLandCoords(
 }
 
 export function useLands(systemType?: SystemType) {
-  const { user } = useAuth();
-  const [lands, setLands] = useState<Land[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  const fetchLands = useCallback(async () => {
-    if (!user) return;
-    setLoading(true);
-
-    let q = supabase.from('lands').select('*').eq('user_id', user.id);
-    if (systemType) q = q.eq('system_type', systemType);
-    const { data } = await q.order('id');
-
-    setLands(data ?? []);
-    setLoading(false);
-  }, [user, systemType]);
-
-  useEffect(() => { fetchLands(); }, [fetchLands]);
-
-  return { lands, loading, refetch: fetchLands };
+    return useLandsContext(systemType);
 }
+

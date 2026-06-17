@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import maskot from './assets/maskot-sigma.png'; 
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AppProvider, useApp } from './contexts/AppContext';
+import { LandsProvider } from './contexts/LandsContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import AuthPage from './pages/AuthPage';
 import HomePage from './pages/HomePage';
@@ -9,6 +10,7 @@ import DashboardPage from './pages/DashboardPage';
 import AIAnalysisPage from './pages/AIAnalysisPage';
 import HistoryPage from './pages/HistoryPage';
 import SettingsPage from './pages/SettingsPage';
+import GuidebookPage from './pages/GuidebookPage';
 import MainLayout from './components/layout/MainLayout';
 // DISABLED: ToastContainer - Diganti dengan NotificationCenter di Sidebar
 // import ToastContainer from './components/notifications/ToastContainer';
@@ -30,6 +32,7 @@ function PageContent() {
         {activePage === 'ai-analysis' && <AIAnalysisPage />}
         {activePage === 'history' && <HistoryPage />}
         {activePage === 'settings' && <SettingsPage />}
+        {activePage === 'guidebook' && <GuidebookPage />}
       </motion.div>
     </AnimatePresence>
   );
@@ -87,12 +90,14 @@ function AppInner() {
 
   return (
     <NotificationProvider>
-      <AppProvider>
-        <MainLayout>
-          <PageContent />
-        </MainLayout>
-        {/* DISABLED: ToastContainer moved to NotificationCenter in Sidebar */}
-      </AppProvider>
+      <LandsProvider>
+        <AppProvider>
+          <MainLayout>
+            <PageContent />
+          </MainLayout>
+          {/* DISABLED: ToastContainer moved to NotificationCenter in Sidebar */}
+        </AppProvider>
+      </LandsProvider>
     </NotificationProvider>
   );
 }
