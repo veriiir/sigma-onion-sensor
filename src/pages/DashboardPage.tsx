@@ -9,8 +9,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { useSensorData } from '../hooks/useSensorData';
 import { useLands } from '../hooks/useLands';
 import SensorCard from '../components/dashboard/SensorCard';
+import StatusLegendCard from '../components/dashboard/StatusLegendCard';
 import LandSelector from '../components/dashboard/LandSelector';
 import LandAddModal from '../components/dashboard/LandAddModal';
+import SensorGuide from '../components/dashboard/SensorGuide';
 import { SENSOR_CONFIGS } from '../constants/sensors';
 import { SensorReading, Land, AIAnalysisRecord, SystemType, LandId } from '../types';
 import { supabase } from '../lib/supabase';
@@ -222,6 +224,10 @@ function PortableDashboard() {
             {SENSOR_CONFIGS.map((config, i) => (
               <SensorCard key={`${selectedLand}-${config.key}`} config={config} value={sensorData[config.key] as number} prevValue={prevData ? (prevData[config.key] as number) : undefined} index={i} />
             ))}
+            <StatusLegendCard />
+          </div>
+          <div className="mt-6">
+             <SensorGuide />
           </div>
         </div>
       </motion.div>
@@ -326,6 +332,10 @@ function PanelDashboard() {
             {SENSOR_CONFIGS.map((config, i) => (
               <SensorCard key={`${selectedLand}-${config.key}`} config={config} value={sensorData[config.key] as number} prevValue={prevData ? (prevData[config.key] as number) : undefined} index={i} />
             ))}
+            <StatusLegendCard />
+          </div>
+          <div className="mt-6">
+             <SensorGuide />
           </div>
         </div>
       </motion.div>

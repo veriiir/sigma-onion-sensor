@@ -53,7 +53,7 @@ export function useSensorData(systemType: SystemType, landId: LandId) {
     phosphorus: 0,
     potassium: 0,
     temperature: 0,
-    ph: 7.0,
+    ph: 0,
     conductivity: 0,
     created_at: new Date().toISOString(),
   });
@@ -84,7 +84,7 @@ export function useSensorData(systemType: SystemType, landId: LandId) {
           phosphorus: 0,
           potassium: 0,
           temperature: 0,
-          ph: 7.0, 
+          ph: 0, 
           conductivity: 0,
           created_at: undefined // Menandakan tidak ada timestamp dari DB
         });

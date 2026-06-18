@@ -82,7 +82,18 @@ Deno.serve(async (req: Request) => {
 
     const payload = (await req.json()) as DeviceSensorPayload;
     if (!payload.user_id) return json({ error: "user_id is required" }, 400);
-    if (!payload.land_id) return json({ error: "land_id is required" }, 400);
+    if (!payload.device_id) return json({ error: "device_id is required" }, 400);
+
+    // Cari land_id berdasarkan device_id
+    const { data: config, error: configError } = await supabase
+      .from("device_config")
+      .select("land_id")
+      .eq("device_id", payload.device_id)
+      .single();
+
+    if (configError || !config) {
+      return json({ error: "Device belum dikonfigurasi ke lahan manapun" }, 404);
+    }
 
     const systemType = payload.system_type ?? "portable";
     if (!["portable", "panel"].includes(systemType)) {
@@ -92,7 +103,7 @@ Deno.serve(async (req: Request) => {
     const reading = {
       user_id: payload.user_id,
       system_type: systemType,
-      land_id: payload.land_id,
+      land_id: config.land_id,
       moisture: toNumber(pick(payload, ["moisture", "kelembapan_tanah"])),
       nitrogen: toNumber(payload.nitrogen),
       phosphorus: toNumber(pick(payload, ["phosphorus", "phosphor"])),

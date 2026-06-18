@@ -95,6 +95,23 @@ export default function LandSelector({ selectedLand, onSelect, systemType }: Lan
     }
   };
 
+  const handleLandSelect = async (landId: LandId) => {
+    // 1. Update state di UI
+    onSelect(landId);
+    setOpen(false);
+
+    // 2. Jika mode portable, otomatis update lokasi alat di database
+    if (isPortable && user) {
+      await supabase
+        .from('device_config')
+        .upsert({ 
+          device_id: 'ESP32-001', 
+          land_id: landId,
+          user_id: user.id 
+        });
+    }
+  };
+
   return (
     <div className="relative" ref={ref}>
       <button
@@ -114,46 +131,51 @@ export default function LandSelector({ selectedLand, onSelect, systemType }: Lan
       </button>
 
       {open && (
-        <div className="absolute top-full right-0 mt-3 w-80 bg-white rounded-[2rem] shadow-2xl shadow-black/10 border border-black/5 py-3 z-50 animate-in slide-in-from-top-2 origin-top-right">
-          <div className="px-4 py-2 border-b border-gray-100 mb-1 flex justify-between items-center">
+        <div className="absolute top-full right-0 mt-3 w-80 bg-white rounded-[2rem] shadow-2xl shadow-black/10 border border-black/5 z-50 animate-in slide-in-from-top-2 origin-top-right overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{isPortable ? 'Daftar Lokasi' : 'Daftar Lahan'}</p>
             <button onClick={() => { setShowAddModal(true); setOpen(false); }} className="p-1 hover:bg-primary/10 rounded-lg text-primary transition-colors">
               <Plus className="w-5 h-5" />
             </button>
           </div>
-          <div className="max-h-60 overflow-y-auto">
+          <div className="max-h-[calc(3*5rem)] overflow-y-auto custom-scrollbar">
             {currentViewLands.length === 0 ? (
               <p className="text-xs text-gray-400 text-center py-4">Belum ada {isPortable ? 'lokasi' : 'lahan'} tersimpan</p>
             ) : (
-              currentViewLands.map(land => (
-                <div key={land.id} className="flex items-center group">
-                  <button
-                    onClick={() => { onSelect(land.id); setOpen(false); }}
-                    className={`flex-1 flex items-center gap-3 px-4 py-3 transition-colors ${selectedLand === land.id ? 'bg-primary/10' : 'hover:bg-gray-50'}`}
+              currentViewLands.map((land, index) => {
+                const isLast = index === currentViewLands.length - 1;
+                return (
+                  <div 
+                    key={land.id} 
+                    className={`flex items-center group ${selectedLand === land.id ? 'bg-primary/10' : 'hover:bg-gray-50'} ${isLast ? 'rounded-b-[2rem]' : ''}`}
                   >
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${selectedLand === land.id ? 'bg-primary text-white' : 'bg-gray-100 text-gray-400'}`}>
-                      <MapPin className="w-4 h-4" />
-                    </div>
-                    <div className="flex-1 text-left">
-                      <p className={`text-sm font-bold ${selectedLand === land.id ? 'text-primary' : 'text-gray-700'}`}>{land.label}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">{isPortable ? 'Portable' : `${land.crop} ${land.area ? `• ${land.area}` : ''}`}</p>
-                    </div>
-                    {selectedLand === land.id && <Check className="w-4 h-4 text-primary" />}
-                  </button>
-                   <button
-                     onClick={(e) => {
-                       e.stopPropagation(); // Prevent triggering the land selection
-                       setLandToDelete(land);
-                       setShowDeleteConfirmModal(true);
-                     }}
-                     className="p-2 mr-2 rounded-lg text-gray-400 hover:text-red-500 transition-colors opacity-100"
-                     title="Hapus Lahan"
-                   >
-                     <Trash className="w-4 h-4" />
-                   </button>
-                 </div>
-               ))
-             )}
+                    <button
+                      onClick={() => handleLandSelect(land.id)}
+                      className="flex-1 flex items-center gap-3 px-4 py-3"
+                    >
+                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${selectedLand === land.id ? 'bg-primary text-white' : 'bg-gray-100 text-gray-400'}`}>
+                        <MapPin className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className={`text-sm font-bold ${selectedLand === land.id ? 'text-primary' : 'text-gray-700'}`}>{land.label}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">{isPortable ? 'Portable' : `${land.crop} ${land.area ? `• ${land.area}` : ''}`}</p>
+                      </div>
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setLandToDelete(land);
+                        setShowDeleteConfirmModal(true);
+                      }}
+                      className="w-8 h-8 mr-3 flex items-center justify-center rounded-full text-gray-400 hover:text-white hover:bg-red-500 transition-colors"
+                      title="Hapus Lahan"
+                    >
+                      <Trash className="w-4 h-4" />
+                    </button>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       )}

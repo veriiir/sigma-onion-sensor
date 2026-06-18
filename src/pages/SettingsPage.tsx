@@ -153,7 +153,7 @@ export default function SettingsPage() {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
         <h3 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
           <HelpCircle className="w-4 h-4 text-primary" />
-          Bantuan
+          Pusat Bantuan & Layanan
         </h3>
         <div className="divide-y divide-gray-100">
           <button onClick={() => setActivePage('guidebook')} className="flex items-center gap-3 w-full py-3 hover:bg-gray-50 rounded-xl transition-colors">

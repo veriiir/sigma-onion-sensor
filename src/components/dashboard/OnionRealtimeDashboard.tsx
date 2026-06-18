@@ -23,7 +23,7 @@ export default function OnionRealtimeDashboard({
     nitrogen: 0,
     phosphorus: 0,
     potassium: 0,
-    ph: 7.0,
+    ph: 0,
     moisture: 0,
     temperature: 0,
     conductivity: 0,
@@ -266,7 +266,28 @@ export default function OnionRealtimeDashboard({
             * Parameter tanah di-broadcast instan menggunakan Supabase Realtime Channel secara global.
           </div>
         </div>
+      </div>
 
+      {/* Section Indikator Lengkap */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded-2xl border border-black/5 shadow-sm">
+        <h2 className="col-span-full text-sm font-black uppercase text-gray-800 tracking-wider mb-2">Panduan Nilai Optimal Parameter Tanah</h2>
+        
+        {[
+          { label: 'Nitrogen (N)', optimal: '20–60 mg/kg', desc: 'Penting untuk pertumbuhan vegetatif tanaman.' },
+          { label: 'Fosfor (P)', optimal: '10–40 mg/kg', desc: 'Mendukung perkembangan akar dan energi tanaman.' },
+          { label: 'Kalium (K)', optimal: '80–200 mg/kg', desc: 'Meningkatkan ketahanan tanaman terhadap penyakit.' },
+          { label: 'pH Tanah', optimal: '5.5–7.0', desc: 'Tingkat keasaman yang ideal untuk penyerapan nutrisi.' },
+          { label: 'Kelembaban', optimal: '40–70 %', desc: 'Kadar air tanah agar bawang tetap tumbuh subur.' },
+          { label: 'Konduktivitas', optimal: '0.5–2.5 mS/cm', desc: 'Tingkat konsentrasi garam/nutrisi terlarut.' }
+        ].map((item) => (
+          <div key={item.label} className="flex gap-3 p-3 rounded-xl bg-gray-50">
+            <div className="w-1.5 rounded-full bg-primary" />
+            <div>
+              <p className="text-xs font-bold text-gray-800">{item.label} <span className="text-primary font-normal">({item.optimal})</span></p>
+              <p className="text-[10px] text-gray-500 mt-0.5">{item.desc}</p>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
