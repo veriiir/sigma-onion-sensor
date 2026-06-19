@@ -76,9 +76,42 @@ export function useAIDetection(systemType: SystemType, landId: LandId, userId: s
     const { userId: uid, systemType: st, landId: lid } = paramsRef.current;
     setAnalyzing(true);
 
-    // Simulate inference (swap this for real Roboflow edge-function call)
-    await new Promise(r => setTimeout(r, 2000));
-    const raw = generateRawDetection(st, lid);
+    let rawLabel = 'Sehat';
+    try {
+      if (opts.imageElement) {
+        const canvas = document.createElement('canvas');
+        canvas.width = opts.imageElement.width;
+        canvas.height = opts.imageElement.height;
+        canvas.getContext('2d')!.drawImage(opts.imageElement, 0, 0);
+        const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg'));
+        
+        if (blob) {
+          const formData = new FormData();
+          formData.append('file', blob, 'onion.jpg');
+          const res = await fetch('http://127.0.0.1:5000/predict', { method: 'POST', body: formData });
+          const json = await res.json();
+          const apiLabel = json.result; // 'Healthy', 'Moler', 'Purple blotch'
+
+          // Map API label to internal labels
+          if (apiLabel === 'Healthy') rawLabel = 'Sehat';
+          else if (apiLabel === 'Purple blotch') rawLabel = 'Purple Blotch';
+          else rawLabel = apiLabel; // 'Moler' or others
+        }
+      }
+    } catch (e) {
+      console.error("AI API Error:", e);
+      // Fallback if API fails
+      rawLabel = 'Sehat';
+    }
+
+    const raw: AIDetection = {
+      system_type: st,
+      land_id: lid,
+      image_url: DUMMY_IMAGE_URL,
+      label: rawLabel,
+      confidence: 90.0,
+      bbox_x: 0.2, bbox_y: 0.2, bbox_width: 0.2, bbox_height: 0.2,
+    };
 
     const sensor = uid ? await fetchLatestSensor(uid, st, lid) : null;
 
