@@ -178,6 +178,7 @@ function PortableDashboard() {
   prevDataRef.current = sensorData;
 
   const currentLandName = lands.find(l => l.id === selectedLand)?.label || 'Lokasi Portable';
+  const detectedCount = SENSOR_CONFIGS.filter(config => (sensorData[config.key as keyof SensorReading] as number) > 0).length;
 
   return (
     <div className="space-y-5">
@@ -218,7 +219,7 @@ function PortableDashboard() {
             <h3 className="text-base font-black text-gray-800 tracking-tighter uppercase leading-none">
               Data Sensor <span className="text-primary">{currentLandName}</span>
             </h3>
-            <span className="text-[10px] font-black text-neutral-muted bg-gray-50 border px-3 py-1 rounded-full uppercase italic">7 Parameter Terdeteksi</span>
+            <span className="text-[10px] font-black text-neutral-muted bg-gray-50 border px-3 py-1 rounded-full uppercase italic">{detectedCount} Parameter Terdeteksi</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {SENSOR_CONFIGS.map((config, i) => (
@@ -298,6 +299,7 @@ function PanelDashboard() {
   prevDataRef.current = sensorData;
 
   const currentLand = lands.find(l => l.id === selectedLand) || lands[0];
+  const detectedCount = SENSOR_CONFIGS.filter(config => (sensorData[config.key as keyof SensorReading] as number) > 0).length;
 
   return (
     <div className="space-y-5">
@@ -326,7 +328,7 @@ function PanelDashboard() {
             <h3 className="text-base font-black text-gray-800 tracking-tighter uppercase leading-none">
               Data Sensor <span className="text-primary">{currentLand?.label}</span>
             </h3>
-            <span className="text-[10px] font-black text-neutral-muted bg-gray-50 border px-3 py-1 rounded-full uppercase italic">7 Parameter Terdeteksi</span>
+            <span className="text-[10px] font-black text-neutral-muted bg-gray-50 border px-3 py-1 rounded-full uppercase italic">{detectedCount} Parameter Terdeteksi</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {SENSOR_CONFIGS.map((config, i) => (
