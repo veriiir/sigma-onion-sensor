@@ -25,3 +25,7 @@ dist-ssr
 # Dataset
 Training_ov5/
 Testing_ov5/
+
+# Virtual Environment
+venv/
+.venv/
