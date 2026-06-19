@@ -21,3 +21,7 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Dataset
+Training_ov5/
+Testing_ov5/
