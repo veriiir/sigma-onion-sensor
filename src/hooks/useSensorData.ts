@@ -1,5 +1,3 @@
-hooks/usesensordata
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { SensorReading, SystemType, LandId } from '../types';
 import { supabase } from '../lib/supabase';
