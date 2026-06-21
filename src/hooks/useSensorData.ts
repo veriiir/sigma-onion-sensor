@@ -1,3 +1,5 @@
+hooks/usesensordata
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { SensorReading, SystemType, LandId } from '../types';
 import { supabase } from '../lib/supabase';
@@ -23,15 +25,15 @@ function toDate(value?: string) {
   return Number.isNaN(date.getTime()) ? new Date() : date;
 }
 
-// FIX: Mengambil 1 data paling baru secara global dari database tanpa filter land_id/user_id
-// Menggunakan tabel yang sesuai berdasarkan system_type
+// PERBAIKAN: Mengambil data paling baru secara global berdasarkan tabel alat tanpa filter land_id/user_id
 async function fetchLatestReading(systemType: SystemType, userId: string, landId: LandId): Promise<SensorReading | null> {
   const tableName = systemType === 'portable' ? 'sensor_readings_portable' : 'sensor_readings_panel';
   const { data, error } = await supabase
     .from(tableName)
     .select('*')
-    .eq('user_id', userId)
-    .eq('land_id', landId)
+    // KEDUA FILTER DI BAWAH INI DIHAPUS AGAR DATA IOT BISA MASUK KE WEB:
+    // .eq('user_id', userId) 
+    // .eq('land_id', landId)
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -44,7 +46,6 @@ export function useSensorData(systemType: SystemType, landId: LandId) {
   const { user } = useAuth();
   const { push } = useNotification();
   
-  // FIX: Mengunci nilai default awal pada angka 0 (Bukan data dummy acak)
   const [sensorData, setSensorData] = useState<SensorReading>({
     system_type: systemType,
     land_id: landId,
@@ -61,7 +62,7 @@ export function useSensorData(systemType: SystemType, landId: LandId) {
   const [nextUpdateIn, setNextUpdateIn] = useState(systemType === 'panel' ? PANEL_REFRESH_INTERVAL : PORTABLE_REFRESH_INTERVAL);
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [loading, setLoading] = useState(false);
-  const [isDemoData, setIsDemoData] = useState(false); // Dipaksa selalu false agar tidak lari ke dummy
+  const [isDemoData, setIsDemoData] = useState(false);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -73,7 +74,6 @@ export function useSensorData(systemType: SystemType, landId: LandId) {
     try {
       const latest = await fetchLatestReading(systemType, user.id, landId);
 
-      // FIX PEMUTUS DUMMY ACAK: Jika DB kosong / koneksi Vercel putus, kunci di angka 0 dan pH 7
       if (!latest) {
         console.log("Database kosong atau gagal memuat data asli. Memaksa state ke angka 0.");
         setSensorData({
@@ -86,7 +86,7 @@ export function useSensorData(systemType: SystemType, landId: LandId) {
           temperature: 0,
           ph: 0, 
           conductivity: 0,
-          created_at: undefined // Menandakan tidak ada timestamp dari DB
+          created_at: undefined
         });
         setIsDemoData(false);
         return;
@@ -119,31 +119,28 @@ export function useSensorData(systemType: SystemType, landId: LandId) {
     refreshSensorData(false);
   }, [refreshSensorData]);
 
-  // FIX: Realtime Listener Global Tanpa Filter Kolom land_id agar transmisi Dani terbaca instan
-  // Menggunakan tabel yang sesuai berdasarkan system_type
+  // PERBAIKAN: Mengubah Listener Realtime agar meloloskan data 'default' secara live ke UI web
   useEffect(() => {
     if (!user) return;
 
     const tableName = systemType === 'portable' ? 'sensor_readings_portable' : 'sensor_readings_panel';
-    console.log(`[REALTIME] Mengaktifkan listener untuk memantau data transmisi terbaru dari tabel ${tableName} untuk user ${user.id} dan lahan ${landId}.`);
+    console.log(`[REALTIME] Mengaktifkan listener global tanpa filter untuk tabel ${tableName}.`);
 
     const channel = supabase
-      .channel(`sensor-realtime-${systemType}-${landId}`)
+      .channel(`sensor-realtime-${systemType}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: tableName,
-          filter: `user_id=eq.${user.id}`
+          // FILTER user_id DI SINI DIHAPUS AGAR DATA DARI ALAT IOT MENTAH BISA DITANGKAP LIVE
         },
         (payload) => {
           const newReading = payload.new as SensorReading;
-          if (newReading.land_id !== landId) {
-            console.log(`[REALTIME] Mengabaikan data sensor dari lahan lain.`, newReading);
-            return;
-          }
-          console.log(`Sukses! Ada transmisi data sensor baru untuk lahan ${landId}:`, newReading);
+          
+          // FILTER PENGECEKAN land_id DI SINI DIHAPUS TOTAL AGAR GRAFIK LANGSUNG BERUBAH LIVE
+          console.log(`Sukses! Ada transmisi data sensor baru secara live:`, newReading);
           
           setSensorData(newReading);
           setLastUpdated(toDate(newReading.created_at));
@@ -162,7 +159,7 @@ export function useSensorData(systemType: SystemType, landId: LandId) {
       )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          console.log(`[REALTIME] Jalur untuk tabel ${tableName} aktif.`);
+          console.log(`[REALTIME] Jalur live untuk tabel ${tableName} aktif.`);
         }
       });
 
