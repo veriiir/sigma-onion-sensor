@@ -88,9 +88,10 @@ export function useAIDetection(systemType: SystemType, landId: LandId, userId: s
         if (blob) {
           const formData = new FormData();
           formData.append('file', blob, 'onion.jpg');
-          const res = await fetch('http://127.0.0.1:5000/predict', { method: 'POST', body: formData });
+          const res = await fetch('https://nisrinatiqah-sigma-onion-backend.hf.space/predict', { method: 'POST', body: formData });
           const json = await res.json();
           const apiLabel = json.result; // 'Healthy', 'Moler', 'Purple blotch'
+
 
           // Map API label to internal labels
           if (apiLabel === 'Healthy') rawLabel = 'Sehat';
