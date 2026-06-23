@@ -14,10 +14,10 @@ function generateRawDetection(systemType: SystemType, landId: LandId): AIDetecti
     image_url: DUMMY_IMAGE_URL,
     label: disease.label,
     confidence: parseFloat((disease.confidence + (Math.random() * 4 - 2)).toFixed(1)),
-    bbox_x: parseFloat((0.15 + Math.random() * 0.3).toFixed(3)),
-    bbox_y: parseFloat((0.1 + Math.random() * 0.3).toFixed(3)),
-    bbox_width: parseFloat((0.28 + Math.random() * 0.22).toFixed(3)),
-    bbox_height: parseFloat((0.22 + Math.random() * 0.22).toFixed(3)),
+    bbox_x: 0,
+    bbox_y: 0,
+    bbox_width: 0,
+    bbox_height: 0,
   };
 }
 
@@ -111,7 +111,7 @@ export function useAIDetection(systemType: SystemType, landId: LandId, userId: s
       image_url: DUMMY_IMAGE_URL,
       label: rawLabel,
       confidence: 90.0,
-      bbox_x: 0.2, bbox_y: 0.2, bbox_width: 0.2, bbox_height: 0.2,
+      bbox_x: 0, bbox_y: 0, bbox_width: 0, bbox_height: 0,
     };
 
     const sensor = uid ? await fetchLatestSensor(uid, st, lid) : null;

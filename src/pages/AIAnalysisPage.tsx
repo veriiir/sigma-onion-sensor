@@ -218,13 +218,6 @@ export default function AIAnalysisPage() {
   const sevCfg = severityCfg[severity];
   const hasLocation = loc.latitude !== null && loc.longitude !== null;
 
-  const bboxStyle = detection && imgLoaded && imgRef.current ? {
-    left: `${detection.bbox_x * 100}%`,
-    top: `${detection.bbox_y * 100}%`,
-    width: `${detection.bbox_width * 100}%`,
-    height: `${detection.bbox_height * 100}%`,
-  } : null;
-
   function captureGPS(): Promise<{ latitude: number; longitude: number } | null> {
     return new Promise(resolve => {
       if (!navigator.geolocation) { resolve(null); return; }
@@ -540,20 +533,6 @@ export default function AIAnalysisPage() {
                   </div>
                 )}
 
-
-                {!analyzing && detection && imgLoaded && bboxStyle && (
-                  <AnimatePresence>
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute" style={bboxStyle}>
-                      <div className={`w-full h-full border-2 rounded-sm relative ${severity === 'none' ? 'border-primary' : severity === 'high' ? 'border-red-400' : 'border-tertiary'}`}>
-                        <div className={`absolute -top-6 left-0 px-2 py-0.5 rounded text-xs font-bold text-white whitespace-nowrap ${severity === 'none' ? 'bg-primary' : severity === 'high' ? 'bg-red-500' : 'bg-tertiary'}`}>
-                          {detection.label} — {detection.confidence.toFixed(1)}%
-                        </div>
-                      </div>
-                      <div className={`absolute inset-0 opacity-10 ${severity === 'none' ? 'bg-primary' : severity === 'high' ? 'bg-red-400' : 'bg-tertiary'}`} />
-                    </motion.div>
-                  </AnimatePresence>
-                )}
-
                 <div className="absolute bottom-3 right-3 flex items-center gap-2 bg-primary rounded-full px-4 py-2 border border-white/10 shadow-2xl">
                   <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
                   <span className="text-white text-xs font-medium">SIGMA CAM</span>
@@ -665,11 +644,7 @@ export default function AIAnalysisPage() {
                     <div className="space-y-2">
                       {[
                         { label: 'Versi AI', value: 'penyakit-bawang/1' },
-                        { label: 'Lahan', value: activeMode === 'panel' ? selectedLand.replace('lahan', 'Lahan ') : 'Portable' },
-                        { label: 'Bbox X', value: detection.bbox_x.toFixed(3) },
-                        { label: 'Bbox Y', value: detection.bbox_y.toFixed(3) },
-                        { label: 'Lebar', value: detection.bbox_width.toFixed(3) },
-                        { label: 'Tinggi', value: detection.bbox_height.toFixed(3) },
+                        { label: 'Lahan', value: activeMode === 'panel' ? (selectedLand || '').replace('lahan', 'Lahan ') : 'Portable' },
                       ].map(item => (
                         <div key={item.label} className="flex justify-between text-sm">
                           <span className="text-gray-400">{item.label}</span>
