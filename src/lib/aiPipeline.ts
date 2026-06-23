@@ -162,9 +162,10 @@ export function crossValidate(
 
 // ── Lapis 3: Severity Score & Action Steps ──────────────────────────────────
 
-function calcSeverity(bbox_width: number, bbox_height: number): { score: number; label: 'Ringan' | 'Sedang' | 'Berat' } {
-  const score = Math.min(100, Math.round(bbox_width * bbox_height * 100));
-  const label = score < 15 ? 'Ringan' : score < 35 ? 'Sedang' : 'Berat';
+function calcSeverity(confidence: number): { score: number; label: 'Ringan' | 'Sedang' | 'Berat' } {
+  // Menggunakan confidence sebagai proxy skor keparahan
+  const score = Math.round(confidence);
+  const label = score < 70 ? 'Ringan' : score < 90 ? 'Sedang' : 'Berat';
   return { score, label };
 }
 
@@ -234,7 +235,7 @@ export async function runAIPipeline(input: PipelineInput): Promise<PipelineResul
   const effectiveLabel = cv.overriddenLabel ?? detection.label;
 
   // Lapis 3
-  const { score, label: severityLabel } = calcSeverity(detection.bbox_width, detection.bbox_height);
+  const { score, label: severityLabel } = calcSeverity(detection.confidence);
   const actionFn = ACTION_LIBRARY[effectiveLabel] ?? ACTION_LIBRARY['Sehat'];
   const actionSteps = actionFn(severityLabel);
 
