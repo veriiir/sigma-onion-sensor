@@ -221,7 +221,7 @@ function AIDetailModal({ record, onClose, lands }: { record: AIAnalysisRecord; o
 
 export default function HistoryPage() {
   const { user } = useAuth();
-  const { activeMode } = useApp();
+  const { activeMode, selectedLand } = useApp();
   const { lands } = useLands();
   const [tab, setTab] = useState<TabType>('sensor');
   const [historyViewMode, setHistoryViewMode] = useState(activeMode);
@@ -282,6 +282,25 @@ export default function HistoryPage() {
           setLoading(false);
         });
     }
+    // Tambahkan langganan realtime
+    const tableName = historyViewMode === 'portable' ? 'sensor_readings_portable' : 'sensor_readings_panel';
+    const channel = supabase
+      .channel(`history-${tableName}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: tableName },
+        (payload) => {
+          const newReading = payload.new as SensorReading;
+          if (newReading.user_id === user.id) {
+            setSensorHistory(prev => [newReading, ...prev.slice(0, 99)]);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user, historyViewMode, tab, startDate, endDate]);
 
   function resetDates() {
@@ -442,7 +461,9 @@ export default function HistoryPage() {
                     >
                       <td className="px-6 py-4 text-[11px] font-mono text-gray-500 font-bold tracking-tight whitespace-nowrap">{formatDate(row.created_at!)}</td>
                             <td className="px-3 py-4 text-[10px] font-black capitalize text-center text-primary/70">
-                              {lands.find(l => l.id === row.land_id)?.label ?? row.land_id ?? 'Tidak Ada'}
+                              {row.land_id === 'default' 
+                                ? (lands.find(l => l.id === selectedLand)?.label ?? 'Lahan Utama') 
+                                : (lands.find(l => l.id === row.land_id)?.label ?? row.land_id ?? 'Tidak Ada')}
                             </td>
                       {SENSOR_CONFIGS.map(c => {
                         const val = row[c.key] as number;
@@ -498,7 +519,9 @@ export default function HistoryPage() {
                         <p className="text-xs text-gray-400">{row.created_at ? formatDate(row.created_at) : '—'}</p>
                         <span className="text-gray-300">·</span>
                         <p className="text-xs text-gray-400 capitalize font-medium">
-                          {lands.find(l => l.id === row.land_id)?.label ?? row.land_id}
+                          {row.land_id === 'default' 
+                            ? (lands.find(l => l.id === selectedLand)?.label ?? 'Lahan Utama') 
+                            : (lands.find(l => l.id === row.land_id)?.label ?? row.land_id)}
                         </p>
                       </div>
                     </div>
